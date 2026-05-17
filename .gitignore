@@ -1,0 +1,79 @@
+# Gradle / Kotlin build output
+.gradle/
+.kotlin/
+build/
+**/build/
+
+# Android local config
+local.properties
+captures/
+.externalNativeBuild/
+.cxx/
+
+# Android Studio / IntelliJ
+.idea/
+*.iml
+*.ipr
+*.iws
+out/
+lockroot-website/
+# Generated packages and release artifacts
+*.apk
+*.ap_
+*.aab
+*.aar
+*.dex
+*.class
+*.hprof
+mapping/
+outputs/
+
+# Signing keys and release secrets
+signing/
+*.jks
+*.keystore
+*.p12
+*.pfx
+*.pem
+*.der
+*.key
+key.properties
+keystore.properties
+signing.properties
+release.properties
+
+# Environment and local secrets
+.env
+.env.*
+!.env.example
+*.local
+
+# Lockroot local vault/export files
+*.vault
+*.vault.json
+*.lpexport
+localpass.vault.json
+lockroot-export*.json
+lockroot-export*.lpexport
+
+# Logs and reports
+*.log
+*.tmp
+*.temp
+hs_err_pid*
+replay_pid*
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Node / miscellaneous tooling if used around docs/assets
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# IOS build
+
+ios/
