@@ -74,6 +74,9 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 
-# IOS build
-
-ios/
+# iOS / Xcode local files
+ios/**/build/
+ios/**/DerivedData/
+ios/**/*.xcuserstate
+ios/**/xcuserdata/
+ios/**/.swiftpm/

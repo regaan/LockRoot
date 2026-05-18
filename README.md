@@ -2,7 +2,7 @@
 
 ![Lockroot logo](docs/assets/lockroot.png)
 
-Lockroot is an offline Android password manager. It keeps a single encrypted vault on the device and does not ask for internet access.
+Lockroot is an offline password manager for Android and iOS. It keeps a single encrypted vault on the device and does not need accounts, sync servers, analytics, ads, or telemetry.
 
 No account. No sync. No ads. No analytics. No telemetry. No recovery backdoor.
 
@@ -17,11 +17,13 @@ The tradeoff is simple: if the master password is strong and remembered, the vau
 - Generates passwords with configurable length and character groups.
 - Clears app-copied clipboard values automatically.
 - Locks when the app goes to the background.
-- Locks after inactivity.
-- Blocks screenshots and normal Android screen recordings with `FLAG_SECURE`.
 - Exports encrypted backups with a separate export password.
 - Imports encrypted backups with preview, merge, or replace.
 - Requires Terms and Privacy acceptance before first vault creation.
+
+Android also locks after inactivity and blocks screenshots/normal screen recordings with `FLAG_SECURE`.
+
+iOS locks when the app leaves the foreground. iOS does not provide the same universal screenshot blocking API as Android.
 
 ## Security Design
 
@@ -49,9 +51,11 @@ Wrong passwords, modified vault files, and modified export files fail authentica
 ## Crypto
 
 - KDF: `Argon2id`
-- KDF implementation: Bouncy Castle
+- Android KDF implementation: Bouncy Castle
+- iOS KDF implementation: Argon2Swift
 - Cipher: `XChaCha20-Poly1305`
-- Cipher implementation: LazySodium / libsodium
+- Android cipher implementation: LazySodium / libsodium
+- iOS cipher implementation: Swift-Sodium / libsodium
 - Vault metadata is authenticated as associated data.
 - Each vault/export gets a random salt.
 - Each encryption gets a fresh random nonce.
@@ -74,6 +78,19 @@ It does not request:
 - Broad storage access
 
 Import and export use Android's system document picker, so broad storage permission is not needed.
+
+## iOS Notes
+
+The iOS app lives in `ios/Lockroot`.
+
+It is a native SwiftUI project using:
+
+- SwiftUI for the app UI
+- Argon2Swift for Argon2id key derivation
+- Swift-Sodium / libsodium for XChaCha20-Poly1305
+- iOS Application Support storage with complete file protection
+- Swift Package Manager for dependencies
+
 
 ## No Recovery
 
@@ -119,6 +136,14 @@ app/src/main/res/
 app/src/test/java/com/regaan/lockroot/
   crypto/                         Crypto behavior tests
   vault/                          Vault, import/export, generator tests
+
+ios/Lockroot/
+  Lockroot.xcodeproj              Native iOS Xcode project
+  Lockroot/App/                   SwiftUI app entry and state model
+  Lockroot/Crypto/                Argon2id and libsodium crypto service
+  Lockroot/Vault/                 Vault models, codec, storage, repository
+  Lockroot/UI/                    Setup, unlock, home, settings, sheets
+  Lockroot/Resources/             App icons and image assets
 
 docs/assets/
   lockroot.png                    README logo
