@@ -1,0 +1,127 @@
+name: Mobile CI
+
+on:
+  push:
+    branches:
+      - main
+      - master
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  android:
+    name: Android build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - name: Accept Android SDK licenses
+        shell: bash
+        run: yes | sdkmanager --licenses >/dev/null
+
+      - name: Install Android SDK packages
+        shell: bash
+        run: sdkmanager "platform-tools" "platforms;android-36" "build-tools;36.0.0"
+
+      - name: Make Gradle executable
+        shell: bash
+        run: chmod +x ./gradlew
+
+      - name: Create temporary Android release signing key
+        shell: bash
+        run: |
+          set -euo pipefail
+          keytool -genkeypair \
+            -v \
+            -storetype PKCS12 \
+            -keystore ci-release-upload.p12 \
+            -storepass temporary-ci-release-password \
+            -alias lockroot-ci-release \
+            -keypass temporary-ci-release-password \
+            -keyalg RSA \
+            -keysize 4096 \
+            -validity 30 \
+            -dname "CN=Lockroot CI Release,O=Lockroot,C=US"
+          cat > key.properties <<'EOF'
+          storeFile=ci-release-upload.p12
+          storePassword=temporary-ci-release-password
+          keyAlias=lockroot-ci-release
+          keyPassword=temporary-ci-release-password
+          EOF
+
+      - name: Build Android release artifacts
+        shell: bash
+        run: ./gradlew --no-daemon clean testReleaseUnitTest assembleRelease bundleRelease
+
+      - name: Collect Android artifacts
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p ci-artifacts/android
+          cp app/build/outputs/apk/release/*.apk ci-artifacts/android/Lockroot-android-release.apk
+          cp app/build/outputs/bundle/release/*.aab ci-artifacts/android/Lockroot-android-release.aab
+          (cd ci-artifacts/android && sha256sum * > SHA256SUMS.txt)
+
+      - name: Upload Android artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: lockroot-android
+          path: ci-artifacts/android/
+          retention-days: 14
+
+  ios:
+    name: iOS simulator release build
+    runs-on: macos-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Show Xcode version
+        run: xcodebuild -version
+
+      - name: Resolve Swift packages
+        run: |
+          xcodebuild -resolvePackageDependencies \
+            -project ios/Lockroot/Lockroot.xcodeproj \
+            -scheme Lockroot
+
+      - name: Build iOS simulator release app
+        run: |
+          xcodebuild clean build \
+            -project ios/Lockroot/Lockroot.xcodeproj \
+            -scheme Lockroot \
+            -configuration Release \
+            -sdk iphonesimulator \
+            -destination 'generic/platform=iOS Simulator' \
+            -derivedDataPath build/ios \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO
+
+      - name: Package iOS simulator app
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p ci-artifacts/ios
+          app_path="build/ios/Build/Products/Release-iphonesimulator/Lockroot.app"
+          test -d "$app_path"
+          ditto -c -k --sequesterRsrc --keepParent "$app_path" ci-artifacts/ios/Lockroot-iOS-simulator.app.zip
+          (cd ci-artifacts/ios && shasum -a 256 * > SHA256SUMS.txt)
+
+      - name: Upload iOS simulator artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: lockroot-ios-simulator
+          path: ci-artifacts/ios/
+          retention-days: 14

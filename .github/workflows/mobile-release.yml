@@ -1,0 +1,176 @@
+name: Mobile GitHub Release
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Existing tag to attach artifacts to, for example v1.0.1
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  android:
+    name: Android release artifacts
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.inputs.tag || github.ref }}
+
+      - name: Set up JDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - name: Accept Android SDK licenses
+        shell: bash
+        run: yes | sdkmanager --licenses >/dev/null
+
+      - name: Install Android SDK packages
+        shell: bash
+        run: sdkmanager "platform-tools" "platforms;android-36" "build-tools;36.0.0"
+
+      - name: Make Gradle executable
+        shell: bash
+        run: chmod +x ./gradlew
+
+      - name: Create temporary Android release signing key
+        shell: bash
+        run: |
+          set -euo pipefail
+          keytool -genkeypair \
+            -v \
+            -storetype PKCS12 \
+            -keystore ci-release-upload.p12 \
+            -storepass temporary-ci-release-password \
+            -alias lockroot-ci-release \
+            -keypass temporary-ci-release-password \
+            -keyalg RSA \
+            -keysize 4096 \
+            -validity 30 \
+            -dname "CN=Lockroot CI Release,O=Lockroot,C=US"
+          cat > key.properties <<'EOF'
+          storeFile=ci-release-upload.p12
+          storePassword=temporary-ci-release-password
+          keyAlias=lockroot-ci-release
+          keyPassword=temporary-ci-release-password
+          EOF
+
+      - name: Build Android release APK and AAB
+        shell: bash
+        run: ./gradlew --no-daemon clean testReleaseUnitTest assembleRelease bundleRelease
+
+      - name: Collect Android release artifacts
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p release-artifacts/android
+          cp app/build/outputs/apk/release/*.apk release-artifacts/android/Lockroot-android-release.apk
+          cp app/build/outputs/bundle/release/*.aab release-artifacts/android/Lockroot-android-release.aab
+          (cd release-artifacts/android && sha256sum * > SHA256SUMS.txt)
+
+      - name: Upload Android release artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-android
+          path: release-artifacts/android/
+
+  ios:
+    name: iOS simulator release artifact
+    runs-on: macos-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.inputs.tag || github.ref }}
+
+      - name: Show Xcode version
+        run: xcodebuild -version
+
+      - name: Resolve Swift packages
+        run: |
+          xcodebuild -resolvePackageDependencies \
+            -project ios/Lockroot/Lockroot.xcodeproj \
+            -scheme Lockroot
+
+      - name: Build iOS simulator release app
+        run: |
+          xcodebuild clean build \
+            -project ios/Lockroot/Lockroot.xcodeproj \
+            -scheme Lockroot \
+            -configuration Release \
+            -sdk iphonesimulator \
+            -destination 'generic/platform=iOS Simulator' \
+            -derivedDataPath build/ios \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO
+
+      - name: Package iOS simulator app
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p release-artifacts/ios
+          app_path="build/ios/Build/Products/Release-iphonesimulator/Lockroot.app"
+          test -d "$app_path"
+          ditto -c -k --sequesterRsrc --keepParent "$app_path" release-artifacts/ios/Lockroot-iOS-simulator.app.zip
+          (cd release-artifacts/ios && shasum -a 256 * > SHA256SUMS.txt)
+
+      - name: Upload iOS release artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-ios-simulator
+          path: release-artifacts/ios/
+
+  github-release:
+    name: Publish GitHub release
+    runs-on: ubuntu-latest
+    needs:
+      - android
+      - ios
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.inputs.tag || github.ref }}
+
+      - name: Download release artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: release-artifacts
+
+      - name: Create release notes
+        shell: bash
+        run: |
+          cp RELEASE_NOTES.md release-notes.md
+
+      - name: Create or update GitHub release
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ github.event.inputs.tag || github.ref_name }}
+        run: |
+          set -euo pipefail
+          mapfile -t files < <(find release-artifacts -type f | sort)
+          if [ "${#files[@]}" -eq 0 ]; then
+            echo "No release artifacts found."
+            exit 1
+          fi
+
+          if gh release view "$RELEASE_TAG" >/dev/null 2>&1; then
+            gh release upload "$RELEASE_TAG" "${files[@]}" --clobber
+          else
+            gh release create "$RELEASE_TAG" "${files[@]}" \
+              --title "Lockroot $RELEASE_TAG" \
+              --notes-file release-notes.md
+          fi
