@@ -81,7 +81,7 @@ jobs:
           mkdir -p ci-artifacts/android
           cp app/build/outputs/apk/release/*.apk ci-artifacts/android/Lockroot-android-release.apk
           cp app/build/outputs/bundle/release/*.aab ci-artifacts/android/Lockroot-android-release.aab
-          (cd ci-artifacts/android && sha256sum * > SHA256SUMS.txt)
+          (cd ci-artifacts/android && sha256sum Lockroot-android-release.apk Lockroot-android-release.aab > Lockroot-android-SHA256SUMS.txt)
 
       - name: Upload Android artifacts
         uses: actions/upload-artifact@v4
@@ -127,7 +127,7 @@ jobs:
           app_path="build/ios/Build/Products/Release-iphonesimulator/Lockroot.app"
           test -d "$app_path"
           ditto -c -k --sequesterRsrc --keepParent "$app_path" ci-artifacts/ios/Lockroot-iOS-simulator.app.zip
-          (cd ci-artifacts/ios && shasum -a 256 * > SHA256SUMS.txt)
+          (cd ci-artifacts/ios && shasum -a 256 Lockroot-iOS-simulator.app.zip > Lockroot-ios-simulator-SHA256SUMS.txt)
 
       - name: Upload iOS simulator artifact
         uses: actions/upload-artifact@v4
