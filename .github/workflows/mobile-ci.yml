@@ -72,7 +72,7 @@ jobs:
 
       - name: Build Android release artifacts
         shell: bash
-        run: ./gradlew --no-daemon clean testReleaseUnitTest assembleRelease bundleRelease
+        run: ./gradlew --no-daemon -Dorg.gradle.java.home="$JAVA_HOME" clean testReleaseUnitTest assembleRelease bundleRelease
 
       - name: Collect Android artifacts
         shell: bash
