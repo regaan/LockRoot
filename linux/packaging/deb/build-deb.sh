@@ -43,3 +43,7 @@ Description: Local encrypted password manager
 EOF
 
 dpkg-deb --build "$PKG_DIR" "$OUTPUT_DIR/Lockroot-linux-x64-$VERSION.deb"
+
+# Clean up temporary build artifacts
+rm -rf "$PKG_DIR"
+

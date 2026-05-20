@@ -30,3 +30,7 @@ rpmbuild -bb "$TOPDIR/SPECS/lockroot.spec" \
   --define "lockroot_version $VERSION"
 
 find "$TOPDIR/RPMS" -type f -name '*.rpm' -exec cp {} "$OUTPUT_DIR/Lockroot-linux-x64-$VERSION.rpm" \;
+
+# Clean up temporary build artifacts
+rm -rf "$TOPDIR" "$SOURCE_ROOT"
+

@@ -32,3 +32,7 @@ if [ ! -x "$APPIMAGETOOL" ]; then
 fi
 
 ARCH=x86_64 "$APPIMAGETOOL" "$APPDIR" "$OUTPUT_DIR/Lockroot-linux-x64-$VERSION.AppImage"
+
+# Clean up temporary build artifacts
+rm -rf "$APPDIR" "$APPIMAGETOOL"
+
