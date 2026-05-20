@@ -19,6 +19,8 @@ final class VaultViewModel: ObservableObject {
     private let repository = VaultRepository(storage: VaultStorage())
     private let generator = PasswordGenerator()
     private var clipboardClearTask: Task<Void, Never>?
+    private var failedUnlockAttempts = 0
+    private var unlockBlockedUntil: Date?
 
     init() {
         phase = repository.hasVault ? .unlock : .setup
@@ -36,6 +38,7 @@ final class VaultViewModel: ObservableObject {
             entry.title.lowercased().contains(term) ||
             entry.website.lowercased().contains(term) ||
             entry.username.lowercased().contains(term) ||
+            entry.notes.lowercased().contains(term) ||
             entry.tags.joined(separator: " ").lowercased().contains(term)
         }
     }
@@ -64,12 +67,19 @@ final class VaultViewModel: ObservableObject {
     }
 
     func unlock(password: String) {
+        if let remaining = unlockBlockRemaining(), remaining > 0 {
+            errorMessage = "Too many failed attempts. Try again in \(Int(ceil(remaining))) seconds."
+            return
+        }
+
         do {
             let vault = try repository.unlock(password: password)
             entries = vault.entries
             phase = .unlocked
+            failedUnlockAttempts = 0
+            unlockBlockedUntil = nil
         } catch {
-            errorMessage = "Wrong password or corrupted vault."
+            registerFailedUnlock()
         }
     }
 
@@ -190,16 +200,40 @@ final class VaultViewModel: ObservableObject {
 
     func copyToClipboard(_ text: String) {
         UIPasteboard.general.string = text
+        let pasteboardChangeCount = UIPasteboard.general.changeCount
         infoMessage = "Copied. Clipboard will clear shortly."
         clipboardClearTask?.cancel()
-        clipboardClearTask = Task { [text] in
+        clipboardClearTask = Task { [pasteboardChangeCount] in
             try? await Task.sleep(nanoseconds: 20_000_000_000)
             guard !Task.isCancelled else { return }
             await MainActor.run {
-                if UIPasteboard.general.string == text {
+                if UIPasteboard.general.changeCount == pasteboardChangeCount {
                     UIPasteboard.general.string = ""
                 }
             }
         }
+    }
+
+    private func registerFailedUnlock() {
+        failedUnlockAttempts += 1
+
+        guard failedUnlockAttempts >= 3 else {
+            errorMessage = "Wrong password or corrupted vault."
+            return
+        }
+
+        let delaySeconds = min(30, Int(pow(2.0, Double(min(failedUnlockAttempts - 2, 5)))))
+        unlockBlockedUntil = Date().addingTimeInterval(TimeInterval(delaySeconds))
+        errorMessage = "Wrong password or corrupted vault. Try again in \(delaySeconds) seconds."
+    }
+
+    private func unlockBlockRemaining() -> TimeInterval? {
+        guard let unlockBlockedUntil else { return nil }
+        let remaining = unlockBlockedUntil.timeIntervalSinceNow
+        if remaining <= 0 {
+            self.unlockBlockedUntil = nil
+            return nil
+        }
+        return remaining
     }
 }

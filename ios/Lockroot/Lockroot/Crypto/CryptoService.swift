@@ -15,7 +15,7 @@ final class CryptoService {
     }
 
     func defaultKdfParams() throws -> KdfParams {
-        KdfParams(
+        try KdfParams(
             memoryKiB: 65_536,
             iterations: 3,
             parallelism: 2,

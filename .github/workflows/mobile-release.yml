@@ -94,53 +94,6 @@ jobs:
           name: release-android
           path: release-artifacts/android/
 
-  ios:
-    name: iOS simulator release artifact
-    runs-on: macos-latest
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          ref: ${{ github.event.inputs.tag || github.ref }}
-
-      - name: Show Xcode version
-        run: xcodebuild -version
-
-      - name: Resolve Swift packages
-        run: |
-          xcodebuild -resolvePackageDependencies \
-            -project ios/Lockroot/Lockroot.xcodeproj \
-            -scheme Lockroot
-
-      - name: Build iOS simulator release app
-        run: |
-          xcodebuild clean build \
-            -project ios/Lockroot/Lockroot.xcodeproj \
-            -scheme Lockroot \
-            -configuration Release \
-            -sdk iphonesimulator \
-            -destination 'generic/platform=iOS Simulator' \
-            -derivedDataPath build/ios \
-            CODE_SIGNING_ALLOWED=NO \
-            CODE_SIGNING_REQUIRED=NO
-
-      - name: Package iOS simulator app
-        shell: bash
-        run: |
-          set -euo pipefail
-          mkdir -p release-artifacts/ios
-          app_path="build/ios/Build/Products/Release-iphonesimulator/Lockroot.app"
-          test -d "$app_path"
-          ditto -c -k --sequesterRsrc --keepParent "$app_path" release-artifacts/ios/Lockroot-iOS-simulator.app.zip
-          (cd release-artifacts/ios && shasum -a 256 Lockroot-iOS-simulator.app.zip > Lockroot-ios-simulator-SHA256SUMS.txt)
-
-      - name: Upload iOS release artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: release-ios-simulator
-          path: release-artifacts/ios/
-
   windows:
     name: Windows release installer
     runs-on: windows-latest
@@ -207,7 +160,6 @@ jobs:
     runs-on: ubuntu-latest
     needs:
       - android
-      - ios
       - windows
 
     steps:

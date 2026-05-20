@@ -25,14 +25,10 @@ public sealed class CryptoService
     public byte[] DeriveKey(string password, KdfParams parameters)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(password);
-
-        if (parameters.Salt.Length < 16)
-        {
-            throw new CryptographicException("Invalid Argon2id salt.");
-        }
+        parameters.Validate();
 
         var passwordBytes = Encoding.UTF8.GetBytes(password);
-        var key = new byte[KeyBytes];
+        var key = GC.AllocateArray<byte>(KeyBytes, pinned: true);
 
         try
         {

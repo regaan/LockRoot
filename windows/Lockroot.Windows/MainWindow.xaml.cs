@@ -14,13 +14,20 @@ namespace Lockroot.Windows;
 
 public partial class MainWindow : Window
 {
+    private const int MinimumPasswordLength = 12;
+    private static readonly TimeSpan ClipboardClearDelay = TimeSpan.FromSeconds(20);
+    private static readonly TimeSpan InactivityLockDelay = TimeSpan.FromSeconds(60);
+
     private readonly VaultRepository _repository = new();
     private readonly PasswordGenerator _generator = new();
     private readonly AppSettingsStore _settings = new();
     private readonly ObservableCollection<VaultEntry> _visibleEntries = [];
     private readonly DispatcherTimer _clipboardTimer;
+    private readonly DispatcherTimer _inactivityTimer;
     private string _currentFilter = "all";
-    private string? _lastClipboardSecret;
+    private uint? _clipboardSequence;
+    private int _failedUnlockAttempts;
+    private DateTimeOffset? _unlockBlockedUntil;
 
     public MainWindow()
     {
@@ -29,8 +36,15 @@ public partial class MainWindow : Window
         EntriesList.ItemsSource = _visibleEntries;
         VaultPathText.Text = $"Vault file:\n{_repository.VaultPath}";
 
-        _clipboardTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(20) };
+        _clipboardTimer = new DispatcherTimer { Interval = ClipboardClearDelay };
         _clipboardTimer.Tick += ClearClipboardTimerTick;
+
+        _inactivityTimer = new DispatcherTimer { Interval = InactivityLockDelay };
+        _inactivityTimer.Tick += InactivityTimerTick;
+
+        PreviewMouseDown += ResetInactivityTimer;
+        PreviewMouseWheel += ResetInactivityTimer;
+        StateChanged += MainWindowStateChanged;
 
         ShowInitialScreen();
     }
@@ -59,6 +73,7 @@ public partial class MainWindow : Window
         SetupScreen.Visibility = Visibility.Collapsed;
         UnlockScreen.Visibility = Visibility.Collapsed;
         VaultShell.Visibility = Visibility.Collapsed;
+        _inactivityTimer.Stop();
     }
 
     private void ShowSetup()
@@ -67,6 +82,7 @@ public partial class MainWindow : Window
         SetupScreen.Visibility = Visibility.Visible;
         UnlockScreen.Visibility = Visibility.Collapsed;
         VaultShell.Visibility = Visibility.Collapsed;
+        _inactivityTimer.Stop();
         SetupPasswordBox.Focus();
     }
 
@@ -76,6 +92,7 @@ public partial class MainWindow : Window
         SetupScreen.Visibility = Visibility.Collapsed;
         UnlockScreen.Visibility = Visibility.Visible;
         VaultShell.Visibility = Visibility.Collapsed;
+        _inactivityTimer.Stop();
         UnlockPasswordBox.Password = "";
         UnlockPasswordBox.Focus();
     }
@@ -88,6 +105,9 @@ public partial class MainWindow : Window
         VaultShell.Visibility = Visibility.Visible;
         SearchBox.Text = "";
         _currentFilter = "all";
+        _failedUnlockAttempts = 0;
+        _unlockBlockedUntil = null;
+        ResetInactivityTimer();
         RefreshEntries();
         SearchBox.Focus();
     }
@@ -116,9 +136,9 @@ public partial class MainWindow : Window
             return;
         }
 
-        if (SetupPasswordBox.Password.Length < 8)
+        if (SetupPasswordBox.Password.Length < MinimumPasswordLength)
         {
-            SetupErrorText.Text = "Use at least 8 characters.";
+            SetupErrorText.Text = $"Use at least {MinimumPasswordLength} characters.";
             return;
         }
 
@@ -145,15 +165,24 @@ public partial class MainWindow : Window
     {
         UnlockErrorText.Text = "";
 
+        var remaining = UnlockBlockRemaining();
+        if (remaining > TimeSpan.Zero)
+        {
+            UnlockErrorText.Text = $"Too many failed attempts. Try again in {Math.Ceiling(remaining.TotalSeconds)} seconds.";
+            return;
+        }
+
         try
         {
             _repository.Unlock(UnlockPasswordBox.Password);
             UnlockPasswordBox.Password = "";
+            _failedUnlockAttempts = 0;
+            _unlockBlockedUntil = null;
             ShowVault();
         }
         catch (CryptographicException)
         {
-            UnlockErrorText.Text = "Wrong password or corrupted vault.";
+            RegisterFailedUnlock();
         }
         catch (Exception ex)
         {
@@ -218,24 +247,21 @@ public partial class MainWindow : Window
             return;
         }
 
-        Clipboard.SetText(entry.Password);
-        _lastClipboardSecret = entry.Password;
-        _clipboardTimer.Stop();
-        _clipboardTimer.Start();
+        SetSensitiveClipboard(entry.Password);
     }
 
     private void ClearClipboardTimerTick(object? sender, EventArgs e)
     {
         _clipboardTimer.Stop();
 
-        if (_lastClipboardSecret is null)
+        if (_clipboardSequence is null)
         {
             return;
         }
 
         try
         {
-            if (Clipboard.ContainsText() && Clipboard.GetText() == _lastClipboardSecret)
+            if (ClipboardSequence.Current == _clipboardSequence)
             {
                 Clipboard.Clear();
             }
@@ -246,17 +272,14 @@ public partial class MainWindow : Window
         }
         finally
         {
-            _lastClipboardSecret = null;
+            _clipboardSequence = null;
         }
     }
 
     private void OpenGeneratorClick(object sender, RoutedEventArgs e)
     {
         var generated = _generator.Generate();
-        Clipboard.SetText(generated);
-        _lastClipboardSecret = generated;
-        _clipboardTimer.Stop();
-        _clipboardTimer.Start();
+        SetSensitiveClipboard(generated);
 
         MessageBox.Show(
             "Generated password copied to clipboard. It will clear automatically in 20 seconds.",
@@ -368,9 +391,7 @@ public partial class MainWindow : Window
 
     private void LockVaultClick(object sender, RoutedEventArgs e)
     {
-        _repository.Lock();
-        _visibleEntries.Clear();
-        ShowUnlock();
+        LockVault("Vault locked.");
     }
 
     private void ShowAllEntriesClick(object sender, RoutedEventArgs e)
@@ -397,6 +418,8 @@ public partial class MainWindow : Window
 
     private void OnPreviewKeyDown(object sender, KeyEventArgs e)
     {
+        ResetInactivityTimer();
+
         if (Keyboard.Modifiers == ModifierKeys.Control && e.Key == Key.K && VaultShell.Visibility == Visibility.Visible)
         {
             SearchBox.Focus();
@@ -446,9 +469,92 @@ public partial class MainWindow : Window
         return _repository.CurrentVault.Entries.FirstOrDefault(entry => entry.Id == id);
     }
 
+    private void RegisterFailedUnlock()
+    {
+        _failedUnlockAttempts++;
+
+        if (_failedUnlockAttempts < 3)
+        {
+            UnlockErrorText.Text = "Wrong password or corrupted vault.";
+            return;
+        }
+
+        var delaySeconds = Math.Min(30, Math.Pow(2, Math.Min(_failedUnlockAttempts - 2, 5)));
+        _unlockBlockedUntil = DateTimeOffset.UtcNow.AddSeconds(delaySeconds);
+        UnlockErrorText.Text = $"Wrong password or corrupted vault. Try again in {delaySeconds:0} seconds.";
+    }
+
+    private TimeSpan UnlockBlockRemaining()
+    {
+        if (_unlockBlockedUntil is null)
+        {
+            return TimeSpan.Zero;
+        }
+
+        var remaining = _unlockBlockedUntil.Value - DateTimeOffset.UtcNow;
+        if (remaining <= TimeSpan.Zero)
+        {
+            _unlockBlockedUntil = null;
+            return TimeSpan.Zero;
+        }
+
+        return remaining;
+    }
+
+    private void SetSensitiveClipboard(string text)
+    {
+        Clipboard.SetText(text);
+        _clipboardSequence = ClipboardSequence.Current;
+        _clipboardTimer.Stop();
+        _clipboardTimer.Start();
+    }
+
+    private void ResetInactivityTimer(object? sender = null, EventArgs? e = null)
+    {
+        if (!_repository.IsUnlocked)
+        {
+            return;
+        }
+
+        _inactivityTimer.Stop();
+        _inactivityTimer.Start();
+    }
+
+    private void InactivityTimerTick(object? sender, EventArgs e)
+    {
+        if (_repository.IsUnlocked)
+        {
+            LockVault("Locked after inactivity.");
+        }
+    }
+
+    private void MainWindowStateChanged(object? sender, EventArgs e)
+    {
+        if (WindowState == WindowState.Minimized && _repository.IsUnlocked)
+        {
+            LockVault("Locked because Lockroot was minimized.");
+        }
+    }
+
+    private void LockVault(string message)
+    {
+        _inactivityTimer.Stop();
+        _repository.Lock();
+        _visibleEntries.Clear();
+        ShowUnlock();
+        UnlockErrorText.Text = message;
+    }
+
+    protected override void OnSourceInitialized(EventArgs e)
+    {
+        base.OnSourceInitialized(e);
+        WindowCaptureProtection.Apply(this);
+    }
+
     protected override void OnClosed(EventArgs e)
     {
         _clipboardTimer.Stop();
+        _inactivityTimer.Stop();
         _repository.Dispose();
         base.OnClosed(e);
     }

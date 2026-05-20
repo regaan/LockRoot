@@ -59,4 +59,10 @@ public partial class EntryEditorWindow : Window
     {
         DialogResult = false;
     }
+
+    protected override void OnSourceInitialized(EventArgs e)
+    {
+        base.OnSourceInitialized(e);
+        WindowCaptureProtection.Apply(this);
+    }
 }

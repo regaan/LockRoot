@@ -1,9 +1,11 @@
 using System.Windows;
+using Lockroot.Windows.Services;
 
 namespace Lockroot.Windows.Dialogs;
 
 public partial class PasswordPromptWindow : Window
 {
+    private const int MinimumPasswordLength = 12;
     private readonly bool _requiresConfirmation;
 
     public PasswordPromptWindow(string title, string message, bool requiresConfirmation)
@@ -24,9 +26,9 @@ public partial class PasswordPromptWindow : Window
     {
         ErrorText.Text = "";
 
-        if (PasswordBox.Password.Length < 8)
+        if (PasswordBox.Password.Length < MinimumPasswordLength)
         {
-            ErrorText.Text = "Use at least 8 characters.";
+            ErrorText.Text = $"Use at least {MinimumPasswordLength} characters.";
             return;
         }
 
@@ -43,5 +45,11 @@ public partial class PasswordPromptWindow : Window
     private void CancelClick(object sender, RoutedEventArgs e)
     {
         DialogResult = false;
+    }
+
+    protected override void OnSourceInitialized(EventArgs e)
+    {
+        base.OnSourceInitialized(e);
+        WindowCaptureProtection.Apply(this);
     }
 }

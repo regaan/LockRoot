@@ -68,16 +68,18 @@ enum VaultJson {
             throw CryptoError.invalidCiphertext
         }
 
+        let kdfParams = try KdfParams(
+            memoryKiB: dto.kdf.memory,
+            iterations: dto.kdf.iterations,
+            parallelism: dto.kdf.parallelism,
+            salt: salt
+        )
+
         return VaultEnvelope(
             magic: dto.magic,
             version: dto.version,
             kdf: dto.kdf.name,
-            kdfParams: KdfParams(
-                memoryKiB: dto.kdf.memory,
-                iterations: dto.kdf.iterations,
-                parallelism: dto.kdf.parallelism,
-                salt: salt
-            ),
+            kdfParams: kdfParams,
             cipher: dto.cipher.name,
             nonce: nonce,
             ciphertext: ciphertext,
@@ -111,16 +113,16 @@ enum VaultJson {
         guard envelope.kdf == "argon2id" else {
             throw CryptoError.unsupportedFormat("Unsupported KDF.")
         }
-        guard (19_456...262_144).contains(envelope.kdfParams.memoryKiB) else {
+        guard (KdfParams.minMemoryKiB...KdfParams.maxMemoryKiB).contains(envelope.kdfParams.memoryKiB) else {
             throw CryptoError.unsupportedFormat("Unsupported Argon2id memory cost.")
         }
-        guard (2...10).contains(envelope.kdfParams.iterations) else {
+        guard (KdfParams.minIterations...KdfParams.maxIterations).contains(envelope.kdfParams.iterations) else {
             throw CryptoError.unsupportedFormat("Unsupported Argon2id iteration count.")
         }
-        guard (1...8).contains(envelope.kdfParams.parallelism) else {
+        guard (KdfParams.minParallelism...KdfParams.maxParallelism).contains(envelope.kdfParams.parallelism) else {
             throw CryptoError.unsupportedFormat("Unsupported Argon2id parallelism.")
         }
-        guard (16...64).contains(envelope.kdfParams.salt.count) else {
+        guard (KdfParams.minSaltBytes...KdfParams.maxSaltBytes).contains(envelope.kdfParams.salt.count) else {
             throw CryptoError.unsupportedFormat("Unsupported Argon2id salt length.")
         }
         guard envelope.cipher == cipherName else {

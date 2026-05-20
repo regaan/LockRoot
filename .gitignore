@@ -120,7 +120,6 @@ lockroot-website/
 
 # Generated archives and local release drops
 *.zip
-!ios.zip
 *.7z
 *.rar
 *.tar

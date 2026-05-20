@@ -4,6 +4,9 @@ namespace Lockroot.Windows.Services;
 
 public sealed class PasswordGenerator
 {
+    public const int MinLength = 12;
+    public const int MaxLength = 128;
+
     private const string Lowercase = "abcdefghijkmnopqrstuvwxyz";
     private const string Uppercase = "ABCDEFGHJKLMNPQRSTUVWXYZ";
     private const string Numbers = "23456789";
@@ -21,6 +24,11 @@ public sealed class PasswordGenerator
         if (uppercase) groups.Add(Uppercase);
         if (numbers) groups.Add(Numbers);
         if (symbols) groups.Add(Symbols);
+
+        if (length is < MinLength or > MaxLength)
+        {
+            throw new ArgumentOutOfRangeException(nameof(length), $"Password length must be between {MinLength} and {MaxLength} characters.");
+        }
 
         if (groups.Count == 0)
         {

@@ -35,11 +35,11 @@ The tradeoff is simple: if the master password is strong and remembered, the vau
 - Imports encrypted backups with preview, merge, or replace.
 - Requires Terms and Privacy acceptance before first vault creation.
 
-Android also locks after inactivity and blocks screenshots/normal screen recordings with `FLAG_SECURE`.
+Android locks after inactivity and blocks screenshots/normal screen recordings with `FLAG_SECURE`.
 
 iOS locks when the app leaves the foreground. iOS does not provide the same universal screenshot blocking API as Android.
 
-Windows provides a native WPF desktop vault with the same no-recovery local model, encrypted import/export, password generation, and a normal installer flow with Terms and Conditions before install.
+Windows locks after inactivity or minimize, asks Windows to exclude vault windows from normal OS screen capture where supported, and ships as a normal installer flow with Terms and Conditions before install.
 
 ## Security Design
 
@@ -49,7 +49,7 @@ Lockroot never uses the password directly as an encryption key.
 Master password
   -> Argon2id
   -> 256-bit vault key
-  -> XChaCha20-Poly1305
+  -> XChaCha20-Poly1305 / AES-256-GCM
   -> encrypted local vault
 ```
 
@@ -70,7 +70,7 @@ Wrong passwords, modified vault files, and modified export files fail authentica
 - Android KDF implementation: Bouncy Castle
 - iOS KDF implementation: Argon2Swift
 - Windows KDF implementation: Bouncy Castle
-- Cipher: `XChaCha20-Poly1305`
+- Cipher: `XChaCha20-Poly1305` on Android/iOS, `AES-256-GCM` on Windows
 - Android cipher implementation: LazySodium / libsodium
 - iOS cipher implementation: Swift-Sodium / libsodium
 - Windows cipher implementation: AES-256-GCM via Bouncy Castle
@@ -124,7 +124,7 @@ It is a native WPF desktop project using:
 Build the Windows app:
 
 ```powershell
-dotnet restore .\windows\Lockroot.Windows\Lockroot.Windows.csproj --configfile .\windows\Lockroot.Windows\NuGet.Config
+dotnet restore .\windows\Lockroot.Windows\Lockroot.Windows.csproj --configfile .\windows\Lockroot.Windows\NuGet.Config -r win-x64
 dotnet publish .\windows\Lockroot.Windows\Lockroot.Windows.csproj -c Release -r win-x64 --self-contained true
 ```
 
@@ -162,6 +162,7 @@ Real risks include:
 - fake or modified APKs
 - someone watching the master password being typed
 - someone recording the screen with another camera
+- managed UI strings that cannot be force-wiped instantly by the app runtime
 
 Use a trusted build, keep the device clean, and use a strong master password.
 
