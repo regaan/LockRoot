@@ -5,6 +5,11 @@ PUBLISH_DIR="${1:?Usage: build-rpm.sh <publish-dir> <output-dir> [version]}"
 OUTPUT_DIR="${2:?Usage: build-rpm.sh <publish-dir> <output-dir> [version]}"
 VERSION="${3:-1.1.1}"
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)"
+
+# rpmbuild is sensitive to relative paths in %{_topdir}. Use absolute paths
+# to avoid it attempting to cd into "/$OUTPUT_DIR/..." in some environments.
+PUBLISH_DIR="$(cd "$PUBLISH_DIR" && pwd)"
+OUTPUT_DIR="$(mkdir -p "$OUTPUT_DIR" && cd "$OUTPUT_DIR" && pwd)"
 TOPDIR="$OUTPUT_DIR/rpmbuild"
 SOURCE_ROOT="$OUTPUT_DIR/lockroot-$VERSION"
 
