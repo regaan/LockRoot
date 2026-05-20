@@ -9,7 +9,7 @@
   <em>Lockroot can bury your vault in serious crypto, but it cannot save a password that would lose a fight to a sticky note.</em>
 </p>
 
-Lockroot is an offline password manager for Android, iOS, and Windows. It keeps a single encrypted vault on the device and does not need accounts, sync servers, analytics, ads, or telemetry.
+Lockroot is an offline password manager for Android, iOS, Windows, and Linux. It keeps a single encrypted vault on the device and does not need accounts, sync servers, analytics, ads, or telemetry.
 
 No account. No sync. No ads. No analytics. No telemetry. No recovery backdoor.
 
@@ -20,7 +20,46 @@ The tradeoff is simple: if the master password is strong and remembered, the vau
 - iOS App Store: https://apps.apple.com/app/id6770449898
 - Android: Google Play internal testing
 - Windows: GitHub release installer
+- Linux: GitHub release packages
 - Website: https://lockroot.rothackers.com
+
+## Linux Install
+
+Download Linux builds from the GitHub release page:
+
+```text
+https://github.com/regaan/LockRoot/releases
+```
+
+Recommended for most users:
+
+```bash
+chmod +x Lockroot-linux-x64-1.2.0.AppImage
+./Lockroot-linux-x64-1.2.0.AppImage
+```
+
+Debian / Ubuntu:
+
+```bash
+sudo apt install ./Lockroot-linux-x64-1.2.0.deb
+lockroot
+```
+
+Fedora / RHEL / openSUSE-style RPM systems:
+
+```bash
+sudo dnf install ./Lockroot-linux-x64-1.2.0.rpm
+lockroot
+```
+
+Portable tarball:
+
+```bash
+mkdir lockroot
+tar -xzf Lockroot-linux-x64-1.2.0.tar.gz -C lockroot
+cd lockroot
+./Lockroot
+```
 
 ## What It Does
 
@@ -40,6 +79,8 @@ Android locks after inactivity and blocks screenshots/normal screen recordings w
 iOS locks when the app leaves the foreground. iOS does not provide the same universal screenshot blocking API as Android.
 
 Windows locks after inactivity or minimize, asks Windows to exclude vault windows from normal OS screen capture where supported, and ships as a normal installer flow with Terms and Conditions before install.
+
+Linux locks after inactivity or minimize and ships as native desktop release packages.
 
 ## Security Design
 
@@ -70,10 +111,12 @@ Wrong passwords, modified vault files, and modified export files fail authentica
 - Android KDF implementation: Bouncy Castle
 - iOS KDF implementation: Argon2Swift
 - Windows KDF implementation: Bouncy Castle
+- Linux KDF implementation: Bouncy Castle
 - Cipher: `XChaCha20-Poly1305` on Android/iOS, `AES-256-GCM` on Windows
 - Android cipher implementation: LazySodium / libsodium
 - iOS cipher implementation: Swift-Sodium / libsodium
 - Windows cipher implementation: AES-256-GCM via Bouncy Castle
+- Linux cipher implementation: AES-256-GCM via Bouncy Castle
 - Vault metadata is authenticated as associated data.
 - Each vault/export gets a random salt.
 - Each encryption gets a fresh random nonce.
@@ -137,7 +180,30 @@ iscc .\windows\installer\lockroot.iss
 The installer output is generated at:
 
 ```text
-windows/installer/output/LockrootSetup-1.0.0.exe
+windows/installer/output/LockrootSetup-1.1.1.exe
+```
+
+## Linux Notes
+
+The Linux app lives in `linux/Lockroot.Linux`.
+
+It is a native Avalonia desktop project using:
+
+- Avalonia UI for the Linux desktop interface
+- Bouncy Castle for Argon2id and AES-256-GCM
+- `~/.config/Lockroot` for local encrypted vault storage
+- the same vault/export format as Windows
+- AppImage, `.deb`, `.rpm`, tarball, and Flatpak packaging metadata
+
+Build the Linux app:
+
+```powershell
+$env:DOTNET_CLI_HOME = (Resolve-Path .dotnet-cli).Path
+$env:NUGET_PACKAGES = (Resolve-Path .nuget\packages).Path
+$env:APPDATA = (Resolve-Path .appdata).Path
+$env:LOCALAPPDATA = (Resolve-Path .localappdata).Path
+dotnet build .\linux\Lockroot.Linux\Lockroot.Linux.csproj -c Release --configfile .\linux\Lockroot.Linux\NuGet.Config -p:UsedAvaloniaProducts=
+dotnet publish .\linux\Lockroot.Linux\Lockroot.Linux.csproj -c Release -r linux-x64 --self-contained true --configfile .\linux\Lockroot.Linux\NuGet.Config -p:UsedAvaloniaProducts= -p:PublishSingleFile=false
 ```
 
 ## No Recovery
@@ -206,6 +272,20 @@ windows/Lockroot.Windows/
 windows/installer/
   lockroot.iss                     Inno Setup installer script
   terms.txt                        Installer Terms and Conditions
+
+linux/Lockroot.Linux/
+  Lockroot.Linux.csproj            Native Linux Avalonia project
+  MainWindow.cs                    Setup, unlock, home, settings, import/export UI
+  Security/                        Argon2id and AES-256-GCM vault encryption
+  Vault/                           Vault repository, storage, and file codec
+  Services/                        Legal text, password generation, strength rules
+  Assets/                          Linux app icon and Lockroot visual assets
+
+linux/packaging/
+  appimage/                        AppImage packaging script and AppRun
+  deb/                             Debian package script
+  rpm/                             RPM package spec and script
+  flatpak/                         Flatpak manifest
 
 docs/assets/
   lockroot.png                    README logo

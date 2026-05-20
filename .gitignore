@@ -98,6 +98,16 @@ windows/**/obj/
 windows/**/TestResults/
 windows/**/publish/
 windows/installer/output/
+linux/**/bin/
+linux/**/obj/
+linux/**/TestResults/
+linux/**/publish/
+linux/packaging/**/output/
+linux/packaging/**/release-artifacts/
+linux/packaging/**/*.AppDir/
+linux/packaging/**/*.rpm
+linux/packaging/**/*.deb
+linux/packaging/**/*.AppImage
 *.user
 *.suo
 *.rsuser

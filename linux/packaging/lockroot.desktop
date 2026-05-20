@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Name=Lockroot
+GenericName=Password Manager
+Comment=Local encrypted password manager
+Exec=lockroot
+Icon=lockroot
+Terminal=false
+Categories=Utility;Security;
+StartupWMClass=Lockroot

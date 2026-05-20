@@ -1,6 +1,6 @@
 # Lockroot 1.1.1 Release Notes
 
-Lockroot 1.1.1 is a hardening release for Android, iOS, and Windows. It fixes audit findings around unlock throttling, password policy consistency, clipboard handling, capture protection, KDF validation, and release packaging.
+Lockroot 1.1.1 is a hardening and desktop expansion release for Android, iOS, Windows, and Linux. It fixes audit findings around unlock throttling, password policy consistency, clipboard handling, capture protection, KDF validation, and release packaging.
 
 ## Security Fixes
 
@@ -22,12 +22,15 @@ Lockroot 1.1.1 is a hardening release for Android, iOS, and Windows. It fixes au
 - iOS search now includes notes, matching Android behavior.
 - Windows password generator now enforces a 12 to 128 character range.
 - README now documents Android, iOS, and Windows security behavior more accurately.
+- Linux native desktop app added with setup, unlock, entry management, password generator options, encrypted export/import preview, settings, privacy, terms, and about screens.
+- Linux uses the same Argon2id + AES-256-GCM vault/export format as Windows.
 
 ## Release Packaging
 
 - Android release is now `versionCode 3` / `versionName 1.1.1`.
 - Windows installer is now labeled `1.1.1`.
-- GitHub release workflow now publishes Android and Windows artifacts only.
+- GitHub release workflow now publishes Android, Windows, and Linux artifacts.
+- Linux release artifacts include AppImage, `.deb`, `.rpm`, and tarball builds.
 - The old iOS simulator artifact workflow was removed because iOS is live on the App Store.
 - The accidental `ios.zip` archive is removed and no longer allowlisted in `.gitignore`.
 

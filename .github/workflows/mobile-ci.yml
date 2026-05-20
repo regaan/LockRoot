@@ -149,3 +149,40 @@ jobs:
           name: lockroot-windows
           path: ci-artifacts/windows/
           retention-days: 14
+
+  linux:
+    name: Linux release build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "8.0.x"
+
+      - name: Restore Linux app
+        shell: bash
+        run: dotnet restore ./linux/Lockroot.Linux/Lockroot.Linux.csproj --configfile ./linux/Lockroot.Linux/NuGet.Config -r linux-x64
+
+      - name: Publish Linux app
+        shell: bash
+        run: dotnet publish ./linux/Lockroot.Linux/Lockroot.Linux.csproj -c Release -r linux-x64 --self-contained true --no-restore -p:UsedAvaloniaProducts= -p:PublishSingleFile=false
+
+      - name: Collect Linux artifact
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p ci-artifacts/linux
+          PUBLISH_DIR="linux/Lockroot.Linux/bin/Release/net8.0/linux-x64/publish"
+          tar -C "$PUBLISH_DIR" -czf ci-artifacts/linux/Lockroot-linux-x64.tar.gz .
+          (cd ci-artifacts/linux && sha256sum Lockroot-linux-x64.tar.gz > Lockroot-linux-SHA256SUMS.txt)
+
+      - name: Upload Linux artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: lockroot-linux
+          path: ci-artifacts/linux/
+          retention-days: 14

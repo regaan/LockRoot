@@ -1,0 +1,30 @@
+app-id: io.github.regaan.Lockroot
+runtime: org.freedesktop.Platform
+runtime-version: "24.08"
+sdk: org.freedesktop.Sdk
+command: Lockroot
+finish-args:
+  - --share=ipc
+  - --socket=x11
+  - --socket=wayland
+  - --device=dri
+  - --filesystem=xdg-config/Lockroot:create
+  - --filesystem=xdg-documents
+modules:
+  - name: lockroot
+    buildsystem: simple
+    build-commands:
+      - install -Dm755 Lockroot /app/bin/Lockroot
+      - cp -a *.dll *.json runtimes /app/bin/
+      - install -Dm644 lockroot.desktop /app/share/applications/lockroot.desktop
+      - install -Dm644 io.github.regaan.Lockroot.metainfo.xml /app/share/metainfo/io.github.regaan.Lockroot.metainfo.xml
+      - install -Dm644 lockroot-icon-256.png /app/share/icons/hicolor/256x256/apps/lockroot.png
+    sources:
+      - type: dir
+        path: ../../Lockroot.Linux/bin/Release/net8.0/linux-x64/publish
+      - type: file
+        path: ../lockroot.desktop
+      - type: file
+        path: ../io.github.regaan.Lockroot.metainfo.xml
+      - type: file
+        path: ../../Lockroot.Linux/Assets/lockroot-icon-256.png
