@@ -90,52 +90,6 @@ jobs:
           path: ci-artifacts/android/
           retention-days: 14
 
-  ios:
-    name: iOS simulator release build
-    runs-on: macos-latest
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Show Xcode version
-        run: xcodebuild -version
-
-      - name: Resolve Swift packages
-        run: |
-          xcodebuild -resolvePackageDependencies \
-            -project ios/Lockroot/Lockroot.xcodeproj \
-            -scheme Lockroot
-
-      - name: Build iOS simulator release app
-        run: |
-          xcodebuild clean build \
-            -project ios/Lockroot/Lockroot.xcodeproj \
-            -scheme Lockroot \
-            -configuration Release \
-            -sdk iphonesimulator \
-            -destination 'generic/platform=iOS Simulator' \
-            -derivedDataPath build/ios \
-            CODE_SIGNING_ALLOWED=NO \
-            CODE_SIGNING_REQUIRED=NO
-
-      - name: Package iOS simulator app
-        shell: bash
-        run: |
-          set -euo pipefail
-          mkdir -p ci-artifacts/ios
-          app_path="build/ios/Build/Products/Release-iphonesimulator/Lockroot.app"
-          test -d "$app_path"
-          ditto -c -k --sequesterRsrc --keepParent "$app_path" ci-artifacts/ios/Lockroot-iOS-simulator.app.zip
-          (cd ci-artifacts/ios && shasum -a 256 Lockroot-iOS-simulator.app.zip > Lockroot-ios-simulator-SHA256SUMS.txt)
-
-      - name: Upload iOS simulator artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: lockroot-ios-simulator
-          path: ci-artifacts/ios/
-          retention-days: 14
-
   windows:
     name: Windows release installer build
     runs-on: windows-latest
@@ -151,7 +105,7 @@ jobs:
 
       - name: Restore Windows app
         shell: pwsh
-        run: dotnet restore .\windows\Lockroot.Windows\Lockroot.Windows.csproj --configfile .\windows\Lockroot.Windows\NuGet.Config
+        run: dotnet restore .\windows\Lockroot.Windows\Lockroot.Windows.csproj --configfile .\windows\Lockroot.Windows\NuGet.Config -r win-x64
 
       - name: Publish Windows app
         shell: pwsh

@@ -158,7 +158,7 @@ jobs:
 
       - name: Restore Windows app
         shell: pwsh
-        run: dotnet restore .\windows\Lockroot.Windows\Lockroot.Windows.csproj --configfile .\windows\Lockroot.Windows\NuGet.Config
+        run: dotnet restore .\windows\Lockroot.Windows\Lockroot.Windows.csproj --configfile .\windows\Lockroot.Windows\NuGet.Config -r win-x64
 
       - name: Publish Windows app
         shell: pwsh
