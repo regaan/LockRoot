@@ -1,46 +1,20 @@
-# Gradle / Kotlin build output
-.gradle/
-.kotlin/
-build/
-**/build/
+# OS and editor noise
+.DS_Store
+Thumbs.db
+desktop.ini
+*.swp
+*.swo
+*.tmp
+*.temp
 
-# Android local config
-local.properties
-captures/
-.externalNativeBuild/
-.cxx/
-
-# Android Studio / IntelliJ
-.idea/
-*.iml
-*.ipr
-*.iws
-out/
-lockroot-website/
-# Generated packages and release artifacts
-*.apk
-*.ap_
-*.aab
-*.aar
-*.dex
-*.class
-*.hprof
-mapping/
-outputs/
-
-# Signing keys and release secrets
-signing/
-*.jks
-*.keystore
-*.p12
-*.pfx
-*.pem
-*.der
-*.key
-key.properties
-keystore.properties
-signing.properties
-release.properties
+# Logs and crash reports
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+hs_err_pid*
+replay_pid*
 
 # Environment and local secrets
 .env
@@ -48,7 +22,24 @@ release.properties
 !.env.example
 *.local
 
-# Lockroot local vault/export files
+# Signing keys, certificates, and release secrets
+signing/
+key.properties
+keystore.properties
+signing.properties
+release.properties
+*.jks
+*.keystore
+*.p12
+*.pfx
+*.pem
+*.der
+*.cer
+*.crt
+*.key
+*.mobileprovision
+
+# Lockroot local vault/export data
 *.vault
 *.vault.json
 *.lpexport
@@ -56,27 +47,82 @@ localpass.vault.json
 lockroot-export*.json
 lockroot-export*.lpexport
 
-# Logs and reports
-*.log
-*.tmp
-*.temp
-hs_err_pid*
-replay_pid*
+# Android / Gradle build output
+.gradle/
+.kotlin/
+build/
+**/build/
+captures/
+.externalNativeBuild/
+.cxx/
+local.properties
+app/release/
+app/debug/
+mapping/
+outputs/
+*.apk
+*.ap_
+*.aab
+*.aar
+*.dex
+*.class
+*.hprof
 
-# OS files
-.DS_Store
-Thumbs.db
-desktop.ini
-
-# Node / miscellaneous tooling if used around docs/assets
-node_modules/
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
+# Android Studio / IntelliJ
+.idea/
+*.iml
+*.ipr
+*.iws
+out/
 
 # iOS / Xcode local files
 ios/**/build/
 ios/**/DerivedData/
-ios/**/*.xcuserstate
-ios/**/xcuserdata/
+ios/**/.build/
 ios/**/.swiftpm/
+ios/**/xcuserdata/
+ios/**/*.xcuserstate
+ios/**/*.ipa
+ios/**/*.xcarchive
+ios/**/*.dSYM/
+ios/**/*.dSYM.zip
+
+# .NET / Windows desktop local tooling
+.dotnet-cli/
+.nuget/
+.appdata/
+.localappdata/
+.vs/
+windows/**/bin/
+windows/**/obj/
+windows/**/TestResults/
+windows/**/publish/
+windows/installer/output/
+*.user
+*.suo
+*.rsuser
+*.nupkg
+*.snupkg
+*.msi
+*.msix
+*.msixbundle
+*.appx
+*.appxbundle
+*.iss~
+
+# Node / website tooling
+node_modules/
+dist/
+.vite/
+.next/
+coverage/
+lockroot-website/
+
+# Generated archives and local release drops
+*.zip
+!ios.zip
+*.7z
+*.rar
+*.tar
+*.tar.gz
+*.tgz

@@ -1,8 +1,15 @@
 # Lockroot
 
-![Lockroot logo](docs/assets/lockroot.png)
+<p align="center">
+  <img src="docs/assets/lockroot.png" alt="Lockroot logo" width="520">
+</p>
 
-Lockroot is an offline password manager for Android and iOS. It keeps a single encrypted vault on the device and does not need accounts, sync servers, analytics, ads, or telemetry.
+<p align="center">
+  <strong>Encryption is not magic armor if your master password is <code>password123</code> wearing a fake mustache.</strong><br>
+  <em>Lockroot can bury your vault in serious crypto, but it cannot save a password that would lose a fight to a sticky note.</em>
+</p>
+
+Lockroot is an offline password manager for Android, iOS, and Windows. It keeps a single encrypted vault on the device and does not need accounts, sync servers, analytics, ads, or telemetry.
 
 No account. No sync. No ads. No analytics. No telemetry. No recovery backdoor.
 
@@ -12,6 +19,7 @@ The tradeoff is simple: if the master password is strong and remembered, the vau
 
 - iOS App Store: https://apps.apple.com/app/id6770449898
 - Android: Google Play internal testing
+- Windows: GitHub release installer
 - Website: https://lockroot.rothackers.com
 
 ## What It Does
@@ -30,6 +38,8 @@ The tradeoff is simple: if the master password is strong and remembered, the vau
 Android also locks after inactivity and blocks screenshots/normal screen recordings with `FLAG_SECURE`.
 
 iOS locks when the app leaves the foreground. iOS does not provide the same universal screenshot blocking API as Android.
+
+Windows provides a native WPF desktop vault with the same no-recovery local model, encrypted import/export, password generation, and a normal installer flow with Terms and Conditions before install.
 
 ## Security Design
 
@@ -59,9 +69,11 @@ Wrong passwords, modified vault files, and modified export files fail authentica
 - KDF: `Argon2id`
 - Android KDF implementation: Bouncy Castle
 - iOS KDF implementation: Argon2Swift
+- Windows KDF implementation: Bouncy Castle
 - Cipher: `XChaCha20-Poly1305`
 - Android cipher implementation: LazySodium / libsodium
 - iOS cipher implementation: Swift-Sodium / libsodium
+- Windows cipher implementation: AES-256-GCM via Bouncy Castle
 - Vault metadata is authenticated as associated data.
 - Each vault/export gets a random salt.
 - Each encryption gets a fresh random nonce.
@@ -97,6 +109,36 @@ It is a native SwiftUI project using:
 - iOS Application Support storage with complete file protection
 - Swift Package Manager for dependencies
 
+## Windows Notes
+
+The Windows app lives in `windows/Lockroot.Windows`.
+
+It is a native WPF desktop project using:
+
+- .NET 8 WPF for the desktop UI
+- Bouncy Castle for Argon2id and authenticated encryption
+- `%APPDATA%\Lockroot` for local encrypted vault storage
+- Inno Setup for the normal Windows installer wizard
+- A first-run Terms and Conditions gate before vault creation
+
+Build the Windows app:
+
+```powershell
+dotnet restore .\windows\Lockroot.Windows\Lockroot.Windows.csproj --configfile .\windows\Lockroot.Windows\NuGet.Config
+dotnet publish .\windows\Lockroot.Windows\Lockroot.Windows.csproj -c Release -r win-x64 --self-contained true
+```
+
+Build the installer after publishing:
+
+```powershell
+iscc .\windows\installer\lockroot.iss
+```
+
+The installer output is generated at:
+
+```text
+windows/installer/output/LockrootSetup-1.0.0.exe
+```
 
 ## No Recovery
 
@@ -150,6 +192,19 @@ ios/Lockroot/
   Lockroot/Vault/                 Vault models, codec, storage, repository
   Lockroot/UI/                    Setup, unlock, home, settings, sheets
   Lockroot/Resources/             App icons and image assets
+
+windows/Lockroot.Windows/
+  Lockroot.Windows.csproj         Native Windows WPF project
+  MainWindow.xaml                  Setup, unlock, home, settings, and vault UI
+  Security/                        Argon2id and authenticated vault encryption
+  Vault/                           Vault repository, storage, and file codec
+  Services/                        Settings and password generation
+  Dialogs/                         Entry editor and password prompt windows
+  Assets/                          App icon and Lockroot visual assets
+
+windows/installer/
+  lockroot.iss                     Inno Setup installer script
+  terms.txt                        Installer Terms and Conditions
 
 docs/assets/
   lockroot.png                    README logo

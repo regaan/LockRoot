@@ -1,4 +1,4 @@
-name: Mobile CI
+name: Lockroot CI
 
 on:
   push:
@@ -134,4 +134,64 @@ jobs:
         with:
           name: lockroot-ios-simulator
           path: ci-artifacts/ios/
+          retention-days: 14
+
+  windows:
+    name: Windows release installer build
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "8.0.x"
+
+      - name: Restore Windows app
+        shell: pwsh
+        run: dotnet restore .\windows\Lockroot.Windows\Lockroot.Windows.csproj --configfile .\windows\Lockroot.Windows\NuGet.Config
+
+      - name: Publish Windows app
+        shell: pwsh
+        run: dotnet publish .\windows\Lockroot.Windows\Lockroot.Windows.csproj -c Release -r win-x64 --self-contained true --no-restore
+
+      - name: Install Inno Setup
+        shell: pwsh
+        run: choco install innosetup --yes --no-progress
+
+      - name: Build Windows installer
+        shell: pwsh
+        run: |
+          $candidates = @(
+            "$env:LOCALAPPDATA\Programs\Inno Setup 6\ISCC.exe",
+            "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe",
+            "${env:ProgramFiles}\Inno Setup 6\ISCC.exe"
+          )
+          $iscc = $candidates | Where-Object { Test-Path $_ } | Select-Object -First 1
+          if (-not $iscc) {
+            $command = Get-Command ISCC.exe -ErrorAction SilentlyContinue
+            if ($command) {
+              $iscc = $command.Source
+            }
+          }
+          if (-not $iscc) {
+            throw "ISCC.exe was not found after installing Inno Setup."
+          }
+          & $iscc .\windows\installer\lockroot.iss
+
+      - name: Collect Windows artifact
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force ci-artifacts\windows | Out-Null
+          Copy-Item .\windows\installer\output\LockrootSetup-*.exe ci-artifacts\windows\Lockroot-windows-setup.exe
+          $hash = Get-FileHash ci-artifacts\windows\Lockroot-windows-setup.exe -Algorithm SHA256
+          "$($hash.Hash.ToLower())  Lockroot-windows-setup.exe" | Set-Content -Encoding ascii ci-artifacts\windows\Lockroot-windows-SHA256SUMS.txt
+
+      - name: Upload Windows installer artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: lockroot-windows
+          path: ci-artifacts/windows/
           retention-days: 14

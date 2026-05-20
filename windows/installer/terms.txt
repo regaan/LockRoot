@@ -1,0 +1,33 @@
+LOCKROOT TERMS AND CONDITIONS
+
+Last updated: 2026-05-20
+
+Lockroot is a local password manager. It stores encrypted vault data on the user's device and does not provide an account, sync service, cloud recovery service, or password recovery backdoor.
+
+By installing or using Lockroot, you agree to the following:
+
+1. No recovery
+
+Lockroot cannot recover a lost master password. If the master password is forgotten, the encrypted vault cannot be decrypted.
+
+2. Local responsibility
+
+You are responsible for protecting your device, choosing a strong master password, and keeping encrypted exports or backups in a safe place.
+
+3. Encrypted export/import
+
+Export files are encrypted with a separate export password. Import requires the same export password. Lockroot cannot recover that password.
+
+4. Security limits
+
+Lockroot protects vault data at rest. It cannot fully protect secrets from a compromised operating system, malicious keyboard, malicious accessibility tooling, screen recording by another device, or physical observation.
+
+5. No warranty
+
+Lockroot is provided as-is, without warranty of any kind. Use it at your own risk.
+
+6. Open-source license
+
+Lockroot is licensed under the GNU Affero General Public License v3.0 or later.
+
+If you do not agree to these terms, do not install or use Lockroot.

@@ -1,0 +1,116 @@
+using Lockroot.Windows.Models;
+using Lockroot.Windows.Security;
+
+namespace Lockroot.Windows.Vault;
+
+public sealed class VaultRepository : IDisposable
+{
+    private readonly VaultStorage _storage = new();
+    private readonly VaultFileCodec _codec = new();
+    private VaultSession? _session;
+
+    public bool HasVault => _storage.Exists();
+    public bool IsUnlocked => _session is not null;
+    public VaultDocument CurrentVault => _session?.Vault ?? throw new InvalidOperationException("Vault is locked.");
+    public string VaultPath => _storage.VaultPath;
+
+    public void Create(string password)
+    {
+        var vault = new VaultDocument();
+        var sessionData = _codec.CreateSession(vault, password);
+
+        _storage.Write(sessionData.Bytes);
+        _session?.Dispose();
+        _session = new VaultSession(vault, sessionData.Key, sessionData.KdfParams);
+    }
+
+    public void Unlock(string password)
+    {
+        var session = _codec.DecryptSession(_storage.Read(), password);
+        _session?.Dispose();
+        _session = session;
+    }
+
+    public void Lock()
+    {
+        _session?.Dispose();
+        _session = null;
+    }
+
+    public void Upsert(VaultEntry entry)
+    {
+        var vault = CurrentVault;
+        var existing = vault.Entries.FindIndex(item => item.Id == entry.Id);
+        var saved = entry.Clone();
+        saved.UpdatedAt = DateTimeOffset.UtcNow;
+
+        if (existing >= 0)
+        {
+            vault.Entries[existing] = saved;
+        }
+        else
+        {
+            saved.CreatedAt = DateTimeOffset.UtcNow;
+            vault.Entries.Add(saved);
+        }
+
+        Save();
+    }
+
+    public void Delete(string id)
+    {
+        CurrentVault.Entries.RemoveAll(entry => entry.Id == id);
+        Save();
+    }
+
+    public byte[] Export(string exportPassword) =>
+        _codec.Encrypt(Clone(CurrentVault), exportPassword, VaultFileCodec.ExportMagic);
+
+    public VaultDocument DecryptExport(byte[] bytes, string exportPassword) =>
+        _codec.Decrypt(bytes, exportPassword, VaultFileCodec.ExportMagic);
+
+    public int Merge(VaultDocument imported)
+    {
+        var existingIds = CurrentVault.Entries.Select(entry => entry.Id).ToHashSet(StringComparer.OrdinalIgnoreCase);
+        var added = 0;
+
+        foreach (var entry in imported.Entries)
+        {
+            var clone = entry.Clone();
+            if (existingIds.Contains(clone.Id))
+            {
+                clone.Id = Guid.NewGuid().ToString("N");
+            }
+
+            CurrentVault.Entries.Add(clone);
+            added++;
+        }
+
+        Save();
+        return added;
+    }
+
+    public void Replace(VaultDocument imported)
+    {
+        CurrentVault.Entries = imported.Entries.Select(entry => entry.Clone()).ToList();
+        Save();
+    }
+
+    public void Save()
+    {
+        var session = _session ?? throw new InvalidOperationException("Vault is locked.");
+        var bytes = _codec.EncryptWithKey(session.Vault, session.Key, session.KdfParams);
+        _storage.Write(bytes);
+    }
+
+    public void Dispose() => Lock();
+
+    private static VaultDocument Clone(VaultDocument source) =>
+        new()
+        {
+            Version = source.Version,
+            CreatedAt = source.CreatedAt,
+            UpdatedAt = source.UpdatedAt,
+            Entries = source.Entries.Select(entry => entry.Clone()).ToList()
+        };
+}
