@@ -5,8 +5,8 @@ Lockroot is an open-source password manager focused on local control, privacy, a
 ## Release Status
 
 - Android is in Google Play internal testing.
-- iOS is in closed testing/App Store preparation.
-- These GitHub artifacts are temporary until public store links are available.
+- iOS is live on the App Store: https://apps.apple.com/app/id6770449898
+- GitHub Android artifacts are temporary until the public Play Store link is available.
 
 ## Android
 
@@ -22,12 +22,11 @@ Because the temporary signing key changes per workflow run, uninstall any previo
 
 ## iOS
 
-This release includes:
+The iOS app is available on the App Store:
 
-- `Lockroot-iOS-simulator.app.zip`
-- `Lockroot-ios-simulator-SHA256SUMS.txt`
+- https://apps.apple.com/app/id6770449898
 
-The iOS artifact is an unsigned simulator release build for verification only. It cannot be installed on a physical iPhone.
+The GitHub release workflow may also attach a simulator build for verification, but iPhone users should install Lockroot from the App Store.
 
 ## Security Model
 

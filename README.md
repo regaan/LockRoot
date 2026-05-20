@@ -8,6 +8,12 @@ No account. No sync. No ads. No analytics. No telemetry. No recovery backdoor.
 
 The tradeoff is simple: if the master password is strong and remembered, the vault can be unlocked. If the master password is lost, the vault is gone.
 
+## Download
+
+- iOS App Store: https://apps.apple.com/app/id6770449898
+- Android: Google Play internal testing
+- Website: https://lockroot.rothackers.com
+
 ## What It Does
 
 - Creates an encrypted local vault.
