@@ -86,6 +86,16 @@ ios/**/*.ipa
 ios/**/*.xcarchive
 ios/**/*.dSYM/
 ios/**/*.dSYM.zip
+macos/**/build/
+macos/**/DerivedData/
+macos/**/.build/
+macos/**/.swiftpm/
+macos/**/xcuserdata/
+macos/**/*.xcuserstate
+macos/**/*.ipa
+macos/**/*.xcarchive
+macos/**/*.dSYM/
+macos/**/*.dSYM.zip
 
 # .NET / Windows desktop local tooling
 .dotnet-cli/

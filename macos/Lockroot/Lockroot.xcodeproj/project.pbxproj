@@ -1,0 +1,541 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 56;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		9B0000010000000000000001 /* LockrootMacApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9B0000010000000000000101 /* LockrootMacApp.swift */; };
+		9B0000010000000000000002 /* VaultViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9B0000010000000000000102 /* VaultViewModel.swift */; };
+		9B0000010000000000000003 /* AeadPayload.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9B0000010000000000000103 /* AeadPayload.swift */; };
+		9B0000010000000000000004 /* CryptoError.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9B0000010000000000000104 /* CryptoError.swift */; };
+		9B0000010000000000000005 /* CryptoService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9B0000010000000000000105 /* CryptoService.swift */; };
+		9B0000010000000000000006 /* KdfParams.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9B0000010000000000000106 /* KdfParams.swift */; };
+		9B0000010000000000000007 /* ClipboardService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9B0000010000000000000107 /* ClipboardService.swift */; };
+		9B0000010000000000000008 /* LegalText.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9B0000010000000000000108 /* LegalText.swift */; };
+		9B0000010000000000000009 /* PasswordGenerator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9B0000010000000000000109 /* PasswordGenerator.swift */; };
+		9B000001000000000000000A /* AuthViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9B000001000000000000010A /* AuthViews.swift */; };
+		9B000001000000000000000B /* DashboardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9B000001000000000000010B /* DashboardView.swift */; };
+		9B000001000000000000000C /* EntryEditorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9B000001000000000000010C /* EntryEditorView.swift */; };
+		9B000001000000000000000D /* RootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9B000001000000000000010D /* RootView.swift */; };
+		9B000001000000000000000E /* Sheets.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9B000001000000000000010E /* Sheets.swift */; };
+		9B000001000000000000000F /* Theme.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9B000001000000000000010F /* Theme.swift */; };
+		9B0000010000000000000010 /* VaultEnvelope.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9B0000010000000000000110 /* VaultEnvelope.swift */; };
+		9B0000010000000000000011 /* VaultFileCodec.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9B0000010000000000000111 /* VaultFileCodec.swift */; };
+		9B0000010000000000000012 /* VaultJson.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9B0000010000000000000112 /* VaultJson.swift */; };
+		9B0000010000000000000013 /* VaultModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9B0000010000000000000113 /* VaultModels.swift */; };
+		9B0000010000000000000014 /* VaultRepository.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9B0000010000000000000114 /* VaultRepository.swift */; };
+		9B0000010000000000000015 /* VaultStorage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9B0000010000000000000115 /* VaultStorage.swift */; };
+		9B0000010000000000000016 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 9B0000010000000000000116 /* Assets.xcassets */; };
+		9B0000010000000000000017 /* LockrootIcon.png in Resources */ = {isa = PBXBuildFile; fileRef = 9B0000010000000000000117 /* LockrootIcon.png */; };
+		9B0000010000000000000018 /* LockrootLogoFull.png in Resources */ = {isa = PBXBuildFile; fileRef = 9B0000010000000000000118 /* LockrootLogoFull.png */; };
+		9B0000010000000000000019 /* Clibsodium in Frameworks */ = {isa = PBXBuildFile; productRef = 9B0000010000000000000502 /* Clibsodium */; };
+		9B000001000000000000001A /* Argon2Swift in Frameworks */ = {isa = PBXBuildFile; productRef = 9B0000010000000000000503 /* Argon2Swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		9B0000010000000000000101 /* LockrootMacApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LockrootMacApp.swift; sourceTree = "<group>"; };
+		9B0000010000000000000102 /* VaultViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VaultViewModel.swift; sourceTree = "<group>"; };
+		9B0000010000000000000103 /* AeadPayload.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AeadPayload.swift; sourceTree = "<group>"; };
+		9B0000010000000000000104 /* CryptoError.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CryptoError.swift; sourceTree = "<group>"; };
+		9B0000010000000000000105 /* CryptoService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CryptoService.swift; sourceTree = "<group>"; };
+		9B0000010000000000000106 /* KdfParams.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KdfParams.swift; sourceTree = "<group>"; };
+		9B0000010000000000000107 /* ClipboardService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClipboardService.swift; sourceTree = "<group>"; };
+		9B0000010000000000000108 /* LegalText.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LegalText.swift; sourceTree = "<group>"; };
+		9B0000010000000000000109 /* PasswordGenerator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PasswordGenerator.swift; sourceTree = "<group>"; };
+		9B000001000000000000010A /* AuthViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthViews.swift; sourceTree = "<group>"; };
+		9B000001000000000000010B /* DashboardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DashboardView.swift; sourceTree = "<group>"; };
+		9B000001000000000000010C /* EntryEditorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EntryEditorView.swift; sourceTree = "<group>"; };
+		9B000001000000000000010D /* RootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RootView.swift; sourceTree = "<group>"; };
+		9B000001000000000000010E /* Sheets.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Sheets.swift; sourceTree = "<group>"; };
+		9B000001000000000000010F /* Theme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Theme.swift; sourceTree = "<group>"; };
+		9B0000010000000000000110 /* VaultEnvelope.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VaultEnvelope.swift; sourceTree = "<group>"; };
+		9B0000010000000000000111 /* VaultFileCodec.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VaultFileCodec.swift; sourceTree = "<group>"; };
+		9B0000010000000000000112 /* VaultJson.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VaultJson.swift; sourceTree = "<group>"; };
+		9B0000010000000000000113 /* VaultModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VaultModels.swift; sourceTree = "<group>"; };
+		9B0000010000000000000114 /* VaultRepository.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VaultRepository.swift; sourceTree = "<group>"; };
+		9B0000010000000000000115 /* VaultStorage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VaultStorage.swift; sourceTree = "<group>"; };
+		9B0000010000000000000116 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		9B0000010000000000000117 /* LockrootIcon.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = LockrootIcon.png; sourceTree = "<group>"; };
+		9B0000010000000000000118 /* LockrootLogoFull.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = LockrootLogoFull.png; sourceTree = "<group>"; };
+		9B0000010000000000000119 /* Lockroot.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Lockroot.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		9B000001000000000000011A /* Lockroot.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Lockroot.entitlements; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		9B0000010000000000000201 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				9B0000010000000000000019 /* Clibsodium in Frameworks */,
+				9B000001000000000000001A /* Argon2Swift in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		9B0000010000000000000300 = {
+			isa = PBXGroup;
+			children = (
+				9B0000010000000000000301 /* Shared Sources */,
+				9B0000010000000000000307 /* Resources */,
+				9B0000010000000000000308 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		9B0000010000000000000301 /* Shared Sources */ = {
+			isa = PBXGroup;
+			children = (
+				9B0000010000000000000302 /* App */,
+				9B0000010000000000000303 /* Crypto */,
+				9B0000010000000000000304 /* Vault */,
+				9B0000010000000000000305 /* Services */,
+				9B0000010000000000000306 /* UI */,
+			);
+			path = ../LockrootMac/Sources/LockrootMac;
+			sourceTree = "<group>";
+		};
+		9B0000010000000000000302 /* App */ = {
+			isa = PBXGroup;
+			children = (
+				9B0000010000000000000101 /* LockrootMacApp.swift */,
+				9B0000010000000000000102 /* VaultViewModel.swift */,
+			);
+			path = App;
+			sourceTree = "<group>";
+		};
+		9B0000010000000000000303 /* Crypto */ = {
+			isa = PBXGroup;
+			children = (
+				9B0000010000000000000103 /* AeadPayload.swift */,
+				9B0000010000000000000104 /* CryptoError.swift */,
+				9B0000010000000000000105 /* CryptoService.swift */,
+				9B0000010000000000000106 /* KdfParams.swift */,
+			);
+			path = Crypto;
+			sourceTree = "<group>";
+		};
+		9B0000010000000000000304 /* Vault */ = {
+			isa = PBXGroup;
+			children = (
+				9B0000010000000000000110 /* VaultEnvelope.swift */,
+				9B0000010000000000000111 /* VaultFileCodec.swift */,
+				9B0000010000000000000112 /* VaultJson.swift */,
+				9B0000010000000000000113 /* VaultModels.swift */,
+				9B0000010000000000000114 /* VaultRepository.swift */,
+				9B0000010000000000000115 /* VaultStorage.swift */,
+			);
+			path = Vault;
+			sourceTree = "<group>";
+		};
+		9B0000010000000000000305 /* Services */ = {
+			isa = PBXGroup;
+			children = (
+				9B0000010000000000000107 /* ClipboardService.swift */,
+				9B0000010000000000000108 /* LegalText.swift */,
+				9B0000010000000000000109 /* PasswordGenerator.swift */,
+			);
+			path = Services;
+			sourceTree = "<group>";
+		};
+		9B0000010000000000000306 /* UI */ = {
+			isa = PBXGroup;
+			children = (
+				9B000001000000000000010A /* AuthViews.swift */,
+				9B000001000000000000010B /* DashboardView.swift */,
+				9B000001000000000000010C /* EntryEditorView.swift */,
+				9B000001000000000000010D /* RootView.swift */,
+				9B000001000000000000010E /* Sheets.swift */,
+				9B000001000000000000010F /* Theme.swift */,
+			);
+			path = UI;
+			sourceTree = "<group>";
+		};
+		9B0000010000000000000307 /* Resources */ = {
+			isa = PBXGroup;
+			children = (
+				9B0000010000000000000116 /* Assets.xcassets */,
+				9B0000010000000000000117 /* LockrootIcon.png */,
+				9B0000010000000000000118 /* LockrootLogoFull.png */,
+				9B000001000000000000011A /* Lockroot.entitlements */,
+			);
+			path = Lockroot/Resources;
+			sourceTree = "<group>";
+		};
+		9B0000010000000000000308 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				9B0000010000000000000119 /* Lockroot.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		9B0000010000000000000401 /* Lockroot */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 9B0000010000000000000602 /* Build configuration list for PBXNativeTarget "Lockroot" */;
+			buildPhases = (
+				9B0000010000000000000202 /* Sources */,
+				9B0000010000000000000201 /* Frameworks */,
+				9B0000010000000000000203 /* Resources */,
+				9B0000010000000000000204 /* Strip Quarantine Attributes */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = Lockroot;
+			packageProductDependencies = (
+				9B0000010000000000000502 /* Clibsodium */,
+				9B0000010000000000000503 /* Argon2Swift */,
+			);
+			productName = Lockroot;
+			productReference = 9B0000010000000000000119 /* Lockroot.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		9B0000010000000000000400 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = 1;
+				LastSwiftUpdateCheck = 1600;
+				LastUpgradeCheck = 1600;
+				TargetAttributes = {
+					9B0000010000000000000401 = {
+						CreatedOnToolsVersion = 16.0;
+					};
+				};
+			};
+			buildConfigurationList = 9B0000010000000000000601 /* Build configuration list for PBXProject "Lockroot" */;
+			compatibilityVersion = "Xcode 14.0";
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				Base,
+			);
+			mainGroup = 9B0000010000000000000300;
+			packageReferences = (
+				9B0000010000000000000504 /* XCRemoteSwiftPackageReference "swift-sodium" */,
+				9B0000010000000000000505 /* XCRemoteSwiftPackageReference "Argon2Swift" */,
+			);
+			productRefGroup = 9B0000010000000000000308 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				9B0000010000000000000401 /* Lockroot */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		9B0000010000000000000203 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				9B0000010000000000000016 /* Assets.xcassets in Resources */,
+				9B0000010000000000000017 /* LockrootIcon.png in Resources */,
+				9B0000010000000000000018 /* LockrootLogoFull.png in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXShellScriptBuildPhase section */
+		9B0000010000000000000204 /* Strip Quarantine Attributes */ = {
+			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+			);
+			name = "Strip Quarantine Attributes";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "if command -v xattr >/dev/null 2>&1; then\n  xattr -cr \"${TARGET_BUILD_DIR}/${FULL_PRODUCT_NAME}\" || true\nfi\n";
+		};
+/* End PBXShellScriptBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		9B0000010000000000000202 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				9B0000010000000000000001 /* LockrootMacApp.swift in Sources */,
+				9B0000010000000000000002 /* VaultViewModel.swift in Sources */,
+				9B0000010000000000000003 /* AeadPayload.swift in Sources */,
+				9B0000010000000000000004 /* CryptoError.swift in Sources */,
+				9B0000010000000000000005 /* CryptoService.swift in Sources */,
+				9B0000010000000000000006 /* KdfParams.swift in Sources */,
+				9B0000010000000000000007 /* ClipboardService.swift in Sources */,
+				9B0000010000000000000008 /* LegalText.swift in Sources */,
+				9B0000010000000000000009 /* PasswordGenerator.swift in Sources */,
+				9B000001000000000000000A /* AuthViews.swift in Sources */,
+				9B000001000000000000000B /* DashboardView.swift in Sources */,
+				9B000001000000000000000C /* EntryEditorView.swift in Sources */,
+				9B000001000000000000000D /* RootView.swift in Sources */,
+				9B000001000000000000000E /* Sheets.swift in Sources */,
+				9B000001000000000000000F /* Theme.swift in Sources */,
+				9B0000010000000000000010 /* VaultEnvelope.swift in Sources */,
+				9B0000010000000000000011 /* VaultFileCodec.swift in Sources */,
+				9B0000010000000000000012 /* VaultJson.swift in Sources */,
+				9B0000010000000000000013 /* VaultModels.swift in Sources */,
+				9B0000010000000000000014 /* VaultRepository.swift in Sources */,
+				9B0000010000000000000015 /* VaultStorage.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		9B0000010000000000000603 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEAD_CODE_STRIPPING = YES;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				DEVELOPMENT_TEAM = "";
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 13.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = macosx;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+			};
+			name = Debug;
+		};
+		9B0000010000000000000604 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEAD_CODE_STRIPPING = YES;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				DEVELOPMENT_TEAM = "";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 13.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				SDKROOT = macosx;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
+		9B0000010000000000000605 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GENERATE_ASSET_SYMBOLS = YES;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CODE_SIGN_ENTITLEMENTS = Lockroot/Lockroot.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 2;
+				DEAD_CODE_STRIPPING = YES;
+				DEVELOPMENT_TEAM = "$(inherited)";
+				ENABLE_HARDENED_RUNTIME = YES;
+				ENABLE_PREVIEWS = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = Lockroot;
+				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = YES;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.productivity";
+				INFOPLIST_KEY_NSHumanReadableCopyright = "Copyright (c) 2026 REGAAN.";
+				MACOSX_DEPLOYMENT_TARGET = 13.0;
+				MARKETING_VERSION = 1.2.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.regaan.lockroot.ios;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = macosx;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				SUPPORTED_PLATFORMS = macosx;
+			};
+			name = Debug;
+		};
+		9B0000010000000000000606 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GENERATE_ASSET_SYMBOLS = YES;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CODE_SIGN_ENTITLEMENTS = Lockroot/Lockroot.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 2;
+				DEAD_CODE_STRIPPING = YES;
+				DEVELOPMENT_TEAM = "$(inherited)";
+				ENABLE_HARDENED_RUNTIME = YES;
+				ENABLE_PREVIEWS = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = Lockroot;
+				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = YES;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.productivity";
+				INFOPLIST_KEY_NSHumanReadableCopyright = "Copyright (c) 2026 REGAAN.";
+				MACOSX_DEPLOYMENT_TARGET = 13.0;
+				MARKETING_VERSION = 1.2.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.regaan.lockroot.ios;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = macosx;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				SUPPORTED_PLATFORMS = macosx;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		9B0000010000000000000601 /* Build configuration list for PBXProject "Lockroot" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				9B0000010000000000000603 /* Debug */,
+				9B0000010000000000000604 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		9B0000010000000000000602 /* Build configuration list for PBXNativeTarget "Lockroot" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				9B0000010000000000000605 /* Debug */,
+				9B0000010000000000000606 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		9B0000010000000000000504 /* XCRemoteSwiftPackageReference "swift-sodium" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/jedisct1/swift-sodium.git";
+			requirement = {
+				branch = master;
+				kind = branch;
+			};
+		};
+		9B0000010000000000000505 /* XCRemoteSwiftPackageReference "Argon2Swift" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/tmthecoder/Argon2Swift.git";
+			requirement = {
+				branch = main;
+				kind = branch;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		9B0000010000000000000502 /* Clibsodium */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 9B0000010000000000000504 /* XCRemoteSwiftPackageReference "swift-sodium" */;
+			productName = Clibsodium;
+		};
+		9B0000010000000000000503 /* Argon2Swift */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 9B0000010000000000000505 /* XCRemoteSwiftPackageReference "Argon2Swift" */;
+			productName = Argon2Swift;
+		};
+/* End XCSwiftPackageProductDependency section */
+	};
+	rootObject = 9B0000010000000000000400 /* Project object */;
+}
