@@ -126,8 +126,6 @@ cd lockroot
 ./Lockroot
 ```
 
-Replace `1.2.0` with the latest release version if needed.
-
 ## Run From Source
 
 ### Android
