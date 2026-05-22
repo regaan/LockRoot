@@ -103,6 +103,9 @@ macos/**/*.dSYM.zip
 .appdata/
 .localappdata/
 .vs/
+**/bin/
+**/obj/
+**/TestResults/
 windows/**/bin/
 windows/**/obj/
 windows/**/TestResults/
