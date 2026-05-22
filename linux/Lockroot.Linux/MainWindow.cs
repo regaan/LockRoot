@@ -1,12 +1,14 @@
 ﻿using System.Globalization;
 using System.IO;
 using System.Security.Cryptography;
+using System.Text;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Controls.Primitives;
 using Avalonia.Controls.Shapes;
 using Avalonia.Input;
+using Avalonia.Input.Platform;
 using Avalonia.Interactivity;
 using Avalonia.Layout;
 using Avalonia.Media;
@@ -48,6 +50,7 @@ public sealed class MainWindow : Window
     private string _searchQuery = "";
     private int _failedUnlocks;
     private DateTimeOffset _blockedUntil;
+    private CancellationTokenSource? _clipboardClearCts;
 
     public MainWindow()
     {
@@ -924,14 +927,81 @@ public sealed class MainWindow : Window
         await clipboard.SetTextAsync(text);
         ShowToast("Copied", "Clipboard will be cleared in 20 seconds.");
 
+        _clipboardClearCts?.Cancel();
+        var clearCts = new CancellationTokenSource();
+        _clipboardClearCts = clearCts;
+        var copiedTextHash = HashClipboardText(text);
+
         _ = Task.Run(async () =>
         {
-            await Task.Delay(TimeSpan.FromSeconds(20));
-            await Dispatcher.UIThread.InvokeAsync(async () =>
+            try
             {
-                await clipboard.SetTextAsync("");
-            });
+                await Task.Delay(TimeSpan.FromSeconds(20), clearCts.Token);
+                await Dispatcher.UIThread.InvokeAsync(async () =>
+                {
+                    if (clearCts.IsCancellationRequested)
+                    {
+                        return;
+                    }
+
+                    var currentText = await clipboard.TryGetTextAsync();
+                    if (currentText is not null && ClipboardTextMatches(currentText, copiedTextHash))
+                    {
+                        await clipboard.SetTextAsync("");
+                    }
+                });
+            }
+            catch (OperationCanceledException)
+            {
+                // A newer Lockroot copy replaced this pending clear.
+            }
+            finally
+            {
+                CryptographicOperations.ZeroMemory(copiedTextHash);
+                if (ReferenceEquals(_clipboardClearCts, clearCts))
+                {
+                    _clipboardClearCts = null;
+                }
+
+                clearCts.Dispose();
+            }
         });
+    }
+
+    private static byte[] HashClipboardText(string text)
+    {
+        var bytes = Encoding.UTF8.GetBytes(text);
+        try
+        {
+            return SHA256.HashData(bytes);
+        }
+        finally
+        {
+            CryptographicOperations.ZeroMemory(bytes);
+        }
+    }
+
+    private static bool ClipboardTextMatches(string text, byte[] expectedHash)
+    {
+        var bytes = Encoding.UTF8.GetBytes(text);
+        byte[] actualHash;
+        try
+        {
+            actualHash = SHA256.HashData(bytes);
+        }
+        finally
+        {
+            CryptographicOperations.ZeroMemory(bytes);
+        }
+
+        try
+        {
+            return CryptographicOperations.FixedTimeEquals(actualHash, expectedHash);
+        }
+        finally
+        {
+            CryptographicOperations.ZeroMemory(actualHash);
+        }
     }
 
     private List<VaultEntry> FilteredEntries() =>

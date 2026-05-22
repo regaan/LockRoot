@@ -13,6 +13,8 @@ on:
 
 permissions:
   contents: write
+  attestations: write
+  id-token: write
 
 jobs:
   android:
@@ -238,6 +240,19 @@ jobs:
         shell: bash
         run: |
           cp RELEASE_NOTES.md release-notes.md
+
+      - name: Attest release artifacts
+        uses: actions/attest-build-provenance@v2
+        with:
+          subject-path: |
+            release-artifacts/**/*.apk
+            release-artifacts/**/*.aab
+            release-artifacts/**/*.exe
+            release-artifacts/**/*.AppImage
+            release-artifacts/**/*.deb
+            release-artifacts/**/*.rpm
+            release-artifacts/**/*.tar.gz
+            release-artifacts/**/*SHA256SUMS.txt
 
       - name: Create or update GitHub release
         shell: bash
