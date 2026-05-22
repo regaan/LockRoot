@@ -15,12 +15,78 @@ enum VaultJson {
             let nonce: String
         }
 
+        struct LegacyArgon2idDTO: Codable {
+            let memory: Int
+            let iterations: Int
+            let parallelism: Int
+            let salt: String
+        }
+
         let magic: String
         let version: Int
         let kdf: KdfDTO
         let cipher: CipherDTO
         let ciphertext: String
         let tag: String
+
+        enum CodingKeys: String, CodingKey {
+            case magic
+            case version
+            case kdf
+            case argon2id
+            case cipher
+            case nonce
+            case ciphertext
+            case tag
+        }
+
+        init(
+            magic: String,
+            version: Int,
+            kdf: KdfDTO,
+            cipher: CipherDTO,
+            ciphertext: String,
+            tag: String
+        ) {
+            self.magic = magic
+            self.version = version
+            self.kdf = kdf
+            self.cipher = cipher
+            self.ciphertext = ciphertext
+            self.tag = tag
+        }
+
+        init(from decoder: Decoder) throws {
+            let container = try decoder.container(keyedBy: CodingKeys.self)
+            magic = try container.decode(String.self, forKey: .magic)
+            version = try container.decode(Int.self, forKey: .version)
+
+            if let decodedKdf = try? container.decode(KdfDTO.self, forKey: .kdf) {
+                kdf = decodedKdf
+            } else {
+                let kdfName = try container.decode(String.self, forKey: .kdf)
+                let argon2id = try container.decode(LegacyArgon2idDTO.self, forKey: .argon2id)
+                kdf = KdfDTO(
+                    name: kdfName,
+                    memory: argon2id.memory,
+                    iterations: argon2id.iterations,
+                    parallelism: argon2id.parallelism,
+                    salt: argon2id.salt
+                )
+            }
+
+            if let decodedCipher = try? container.decode(CipherDTO.self, forKey: .cipher) {
+                cipher = decodedCipher
+            } else {
+                cipher = CipherDTO(
+                    name: try container.decode(String.self, forKey: .cipher),
+                    nonce: try container.decode(String.self, forKey: .nonce)
+                )
+            }
+
+            ciphertext = try container.decode(String.self, forKey: .ciphertext)
+            tag = try container.decode(String.self, forKey: .tag)
+        }
     }
 
     static func vaultToData(_ vault: Vault) throws -> Data {
@@ -104,10 +170,14 @@ enum VaultJson {
     }
 
     static func validate(_ envelope: VaultEnvelope, expectedMagic: String, cipherName: String) throws {
-        guard envelope.magic == expectedMagic else {
+        try validate(envelope, expectedMagic: expectedMagic, supportedCipherNames: [cipherName])
+    }
+
+    static func validate(_ envelope: VaultEnvelope, expectedMagic: String, supportedCipherNames: Set<String>) throws {
+        guard envelope.magic == expectedMagic || acceptedLegacyMagic(actual: envelope.magic, expected: expectedMagic) else {
             throw CryptoError.unsupportedFormat("Unsupported file type.")
         }
-        guard envelope.version == 1 else {
+        guard envelope.version == 1 || envelope.version == VaultFileCodec.currentVersion else {
             throw CryptoError.unsupportedFormat("Unsupported vault version.")
         }
         guard envelope.kdf == "argon2id" else {
@@ -125,8 +195,13 @@ enum VaultJson {
         guard (KdfParams.minSaltBytes...KdfParams.maxSaltBytes).contains(envelope.kdfParams.salt.count) else {
             throw CryptoError.unsupportedFormat("Unsupported Argon2id salt length.")
         }
-        guard envelope.cipher == cipherName else {
+        guard supportedCipherNames.contains(envelope.cipher) else {
             throw CryptoError.unsupportedFormat("Unsupported cipher.")
         }
+    }
+
+    private static func acceptedLegacyMagic(actual: String, expected: String) -> Bool {
+        (expected == VaultFileCodec.vaultMagic && actual == "LOCKROOT") ||
+        (expected == VaultFileCodec.exportMagic && actual == "LOCKROOT-EXPORT")
     }
 }

@@ -1,4 +1,5 @@
 import Foundation
+import CryptoKit
 import Clibsodium
 import Argon2Swift
 
@@ -6,9 +7,11 @@ final class CryptoService {
     static let keyBytes = 32
     static let saltBytes = 32
     static let nonceBytes = 24
+    static let aesGcmNonceBytes = 12
     static let tagBytes = 16
 
     let cipherName = "xchacha20-poly1305"
+    let portableCipherName = "aes-256-gcm"
 
     init() {
         _ = sodium_init()
@@ -37,11 +40,16 @@ final class CryptoService {
 
     func deriveKey(password: String, params: KdfParams) throws -> Data {
         guard !password.isEmpty else { throw CryptoError.invalidPassword }
+        return try deriveKey(passwordData: Data(password.utf8), params: params)
+    }
+
+    func deriveKey(passwordData inputPasswordData: Data, params: KdfParams) throws -> Data {
+        guard !inputPasswordData.isEmpty else { throw CryptoError.invalidPassword }
         guard params.salt.count == Self.saltBytes else {
             throw CryptoError.unsupportedFormat("Invalid Argon2id salt length.")
         }
 
-        var passwordData = Data(password.utf8)
+        var passwordData = inputPasswordData
         defer { wipe(&passwordData) }
 
         do {
@@ -171,6 +179,43 @@ final class CryptoService {
             throw CryptoError.authenticationFailed
         }
         return plaintext
+    }
+
+    func encryptAesGcm(plaintext: Data, key: Data, nonce: Data, associatedData: Data) throws -> AeadPayload {
+        guard key.count == Self.keyBytes else {
+            throw CryptoError.unsupportedFormat("AES-256-GCM key must be 32 bytes.")
+        }
+        guard nonce.count == Self.aesGcmNonceBytes else {
+            throw CryptoError.unsupportedFormat("AES-GCM nonce must be 12 bytes.")
+        }
+
+        let sealed = try AES.GCM.seal(
+            plaintext,
+            using: SymmetricKey(data: key),
+            nonce: try AES.GCM.Nonce(data: nonce),
+            authenticating: associatedData
+        )
+
+        return AeadPayload(ciphertext: sealed.ciphertext, tag: sealed.tag)
+    }
+
+    func decryptAesGcm(payload: AeadPayload, key: Data, nonce: Data, associatedData: Data) throws -> Data {
+        guard key.count == Self.keyBytes else {
+            throw CryptoError.unsupportedFormat("AES-256-GCM key must be 32 bytes.")
+        }
+        guard nonce.count == Self.aesGcmNonceBytes else {
+            throw CryptoError.unsupportedFormat("AES-GCM nonce must be 12 bytes.")
+        }
+        guard payload.tag.count == Self.tagBytes else {
+            throw CryptoError.invalidCiphertext
+        }
+
+        let sealed = try AES.GCM.SealedBox(
+            nonce: try AES.GCM.Nonce(data: nonce),
+            ciphertext: payload.ciphertext,
+            tag: payload.tag
+        )
+        return try AES.GCM.open(sealed, using: SymmetricKey(data: key), authenticating: associatedData)
     }
 
     func wipe(_ data: inout Data) {

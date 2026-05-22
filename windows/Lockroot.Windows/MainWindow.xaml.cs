@@ -6,6 +6,7 @@ using System.Windows.Input;
 using System.Windows.Threading;
 using Lockroot.Windows.Dialogs;
 using Lockroot.Windows.Models;
+using Lockroot.Windows.Security;
 using Lockroot.Windows.Services;
 using Lockroot.Windows.Vault;
 using Microsoft.Win32;
@@ -150,7 +151,16 @@ public partial class MainWindow : Window
 
         try
         {
-            _repository.Create(SetupPasswordBox.Password);
+            var password = PasswordMemory.FromString(SetupPasswordBox.Password);
+            try
+            {
+                _repository.Create(password);
+            }
+            finally
+            {
+                PasswordMemory.Wipe(password);
+            }
+
             SetupPasswordBox.Password = "";
             SetupConfirmPasswordBox.Password = "";
             ShowVault();
@@ -174,8 +184,17 @@ public partial class MainWindow : Window
 
         try
         {
-            _repository.Unlock(UnlockPasswordBox.Password);
-            UnlockPasswordBox.Password = "";
+            var password = PasswordMemory.FromString(UnlockPasswordBox.Password);
+            try
+            {
+                _repository.Unlock(password);
+            }
+            finally
+            {
+                PasswordMemory.Wipe(password);
+                UnlockPasswordBox.Password = "";
+            }
+
             _failedUnlockAttempts = 0;
             _unlockBlockedUntil = null;
             ShowVault();
@@ -290,6 +309,18 @@ public partial class MainWindow : Window
 
     private void ExportVaultClick(object sender, RoutedEventArgs e)
     {
+        var saveDialog = new SaveFileDialog
+        {
+            Title = "Export encrypted Lockroot vault",
+            FileName = $"lockroot-export-{DateTimeOffset.Now:yyyyMMdd-HHmm}.lpexport",
+            Filter = "Lockroot export (*.lpexport)|*.lpexport|All files (*.*)|*.*"
+        };
+
+        if (saveDialog.ShowDialog(this) != true)
+        {
+            return;
+        }
+
         var prompt = new PasswordPromptWindow(
             "Export vault",
             "Create a separate export password. Import requires this exact password.",
@@ -303,18 +334,6 @@ public partial class MainWindow : Window
             return;
         }
 
-        var saveDialog = new SaveFileDialog
-        {
-            Title = "Export encrypted Lockroot vault",
-            FileName = $"lockroot-export-{DateTimeOffset.Now:yyyyMMdd-HHmm}.lpexport",
-            Filter = "Lockroot export (*.lpexport)|*.lpexport|All files (*.*)|*.*"
-        };
-
-        if (saveDialog.ShowDialog(this) != true)
-        {
-            return;
-        }
-
         try
         {
             File.WriteAllBytes(saveDialog.FileName, _repository.Export(prompt.Password));
@@ -323,6 +342,10 @@ public partial class MainWindow : Window
         catch (Exception ex)
         {
             MessageBox.Show($"Export failed: {ex.Message}", "Lockroot", MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+        finally
+        {
+            prompt.WipePassword();
         }
     }
 
@@ -386,6 +409,10 @@ public partial class MainWindow : Window
         catch (Exception ex)
         {
             MessageBox.Show($"Import failed: {ex.Message}", "Lockroot", MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+        finally
+        {
+            prompt.WipePassword();
         }
     }
 
@@ -553,6 +580,7 @@ public partial class MainWindow : Window
 
     protected override void OnClosed(EventArgs e)
     {
+        ClearClipboardTimerTick(null, EventArgs.Empty);
         _clipboardTimer.Stop();
         _inactivityTimer.Stop();
         _repository.Dispose();

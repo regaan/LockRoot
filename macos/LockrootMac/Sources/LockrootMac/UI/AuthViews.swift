@@ -80,6 +80,8 @@ struct SetupView: View {
 
             Button {
                 viewModel.createVault(password: password, confirm: confirm, acceptedTerms: acceptedTerms)
+                password = ""
+                confirm = ""
             } label: {
                 Label("Create Vault", systemImage: "arrow.right")
                     .frame(width: 230)
@@ -124,9 +126,13 @@ struct UnlockView: View {
                     SecureField("Master password", text: $password)
                         .textFieldStyle(.roundedBorder)
                         .focused($focused)
-                        .onSubmit { viewModel.unlock(password: password) }
+                        .onSubmit {
+                            viewModel.unlock(password: password)
+                            password = ""
+                        }
                     Button {
                         viewModel.unlock(password: password)
+                        password = ""
                     } label: {
                         Label("Unlock", systemImage: "arrow.right")
                             .frame(maxWidth: .infinity)

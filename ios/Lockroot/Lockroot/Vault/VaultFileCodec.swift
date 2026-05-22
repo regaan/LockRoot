@@ -3,16 +3,24 @@ import Foundation
 final class VaultFileCodec {
     static let vaultMagic = "Lockroot_VAULT"
     static let exportMagic = "Lockroot_EXPORT"
+    static let currentVersion = 2
 
     private let crypto: CryptoService
+    private var supportedCipherNames: Set<String> {
+        [crypto.cipherName, crypto.portableCipherName]
+    }
 
     init(crypto: CryptoService = CryptoService()) {
         self.crypto = crypto
     }
 
     func createSession(vault: Vault, password: String) throws -> (Data, VaultSession) {
+        try createSession(vault: vault, passwordData: Data(password.utf8))
+    }
+
+    func createSession(vault: Vault, passwordData: Data) throws -> (Data, VaultSession) {
         let kdfParams = try crypto.defaultKdfParams()
-        var key = try crypto.deriveKey(password: password, params: kdfParams)
+        var key = try crypto.deriveKey(passwordData: passwordData, params: kdfParams)
 
         do {
             let encrypted = try encryptVaultWithKey(vault, key: key, kdfParams: kdfParams)
@@ -24,19 +32,18 @@ final class VaultFileCodec {
     }
 
     func decryptSession(data: Data, password: String) throws -> VaultSession {
-        let envelope = try VaultJson.envelopeFromData(data)
-        try VaultJson.validate(envelope, expectedMagic: Self.vaultMagic, cipherName: crypto.cipherName)
+        try decryptSession(data: data, passwordData: Data(password.utf8))
+    }
 
-        var key = try crypto.deriveKey(password: password, params: envelope.kdfParams)
+    func decryptSession(data: Data, passwordData: Data) throws -> VaultSession {
+        let envelope = try VaultJson.envelopeFromData(data)
+        try VaultJson.validate(envelope, expectedMagic: Self.vaultMagic, supportedCipherNames: supportedCipherNames)
+
+        var key = try crypto.deriveKey(passwordData: passwordData, params: envelope.kdfParams)
         var plaintext = Data()
 
         do {
-            plaintext = try crypto.decrypt(
-                payload: AeadPayload(ciphertext: envelope.ciphertext, tag: envelope.tag),
-                key: key,
-                nonce: envelope.nonce,
-                associatedData: VaultJson.associatedData(envelope)
-            )
+            plaintext = try decryptEnvelope(envelope, key: key)
             let vault = try VaultJson.vaultFromData(plaintext)
             crypto.wipe(&plaintext)
             return VaultSession(vault: vault, key: key, kdfParams: envelope.kdfParams)
@@ -47,20 +54,31 @@ final class VaultFileCodec {
         }
     }
 
+    func needsMigration(data: Data, expectedMagic: String = VaultFileCodec.vaultMagic) throws -> Bool {
+        let envelope = try VaultJson.envelopeFromData(data)
+        return envelope.magic != expectedMagic ||
+            envelope.version != Self.currentVersion ||
+            envelope.cipher != crypto.portableCipherName
+    }
+
     func encryptVaultWithKey(
         _ vault: Vault,
         key: Data,
         kdfParams: KdfParams,
-        magic: String = VaultFileCodec.vaultMagic
+        magic: String = VaultFileCodec.vaultMagic,
+        cipherName: String? = nil,
+        version: Int = VaultFileCodec.currentVersion
     ) throws -> Data {
         var plaintext = try VaultJson.vaultToData(vault)
-        let nonce = try crypto.randomBytes(count: CryptoService.nonceBytes)
+        let selectedCipher = cipherName ?? crypto.portableCipherName
+        let nonceSize = selectedCipher == crypto.portableCipherName ? CryptoService.aesGcmNonceBytes : CryptoService.nonceBytes
+        let nonce = try crypto.randomBytes(count: nonceSize)
         let emptyEnvelope = VaultEnvelope(
             magic: magic,
-            version: 1,
+            version: version,
             kdf: "argon2id",
             kdfParams: kdfParams,
-            cipher: crypto.cipherName,
+            cipher: selectedCipher,
             nonce: nonce,
             ciphertext: Data(),
             tag: Data()
@@ -68,12 +86,7 @@ final class VaultFileCodec {
 
         defer { crypto.wipe(&plaintext) }
 
-        let payload = try crypto.encrypt(
-            plaintext: plaintext,
-            key: key,
-            nonce: nonce,
-            associatedData: VaultJson.associatedData(emptyEnvelope)
-        )
+        let payload = try encryptPlaintext(plaintext, envelope: emptyEnvelope, key: key)
 
         return try VaultJson.envelopeToData(
             VaultEnvelope(
@@ -89,17 +102,42 @@ final class VaultFileCodec {
         )
     }
 
-    func encryptVault(_ vault: Vault, password: String, magic: String = VaultFileCodec.vaultMagic) throws -> Data {
+    func encryptVault(
+        _ vault: Vault,
+        password: String,
+        magic: String = VaultFileCodec.vaultMagic,
+        version: Int = VaultFileCodec.currentVersion
+    ) throws -> Data {
+        try encryptVault(vault, passwordData: Data(password.utf8), magic: magic, version: version)
+    }
+
+    func encryptVault(
+        _ vault: Vault,
+        passwordData: Data,
+        magic: String = VaultFileCodec.vaultMagic,
+        version: Int = VaultFileCodec.currentVersion
+    ) throws -> Data {
         let kdfParams = try crypto.defaultKdfParams()
-        var key = try crypto.deriveKey(password: password, params: kdfParams)
+        var key = try crypto.deriveKey(passwordData: passwordData, params: kdfParams)
         defer { crypto.wipe(&key) }
-        return try encryptVaultWithKey(vault, key: key, kdfParams: kdfParams, magic: magic)
+        return try encryptVaultWithKey(
+            vault,
+            key: key,
+            kdfParams: kdfParams,
+            magic: magic,
+            cipherName: crypto.portableCipherName,
+            version: version
+        )
     }
 
     func decryptVault(data: Data, password: String, magic: String = VaultFileCodec.vaultMagic) throws -> Vault {
+        try decryptVault(data: data, passwordData: Data(password.utf8), magic: magic)
+    }
+
+    func decryptVault(data: Data, passwordData: Data, magic: String = VaultFileCodec.vaultMagic) throws -> Vault {
         let envelope = try VaultJson.envelopeFromData(data)
-        try VaultJson.validate(envelope, expectedMagic: magic, cipherName: crypto.cipherName)
-        var key = try crypto.deriveKey(password: password, params: envelope.kdfParams)
+        try VaultJson.validate(envelope, expectedMagic: magic, supportedCipherNames: supportedCipherNames)
+        var key = try crypto.deriveKey(passwordData: passwordData, params: envelope.kdfParams)
         var plaintext = Data()
 
         defer {
@@ -107,12 +145,46 @@ final class VaultFileCodec {
             crypto.wipe(&plaintext)
         }
 
-        plaintext = try crypto.decrypt(
-            payload: AeadPayload(ciphertext: envelope.ciphertext, tag: envelope.tag),
+        plaintext = try decryptEnvelope(envelope, key: key)
+        return try VaultJson.vaultFromData(plaintext)
+    }
+
+    private func encryptPlaintext(_ plaintext: Data, envelope: VaultEnvelope, key: Data) throws -> AeadPayload {
+        let associatedData = VaultJson.associatedData(envelope)
+        if envelope.cipher == crypto.portableCipherName {
+            return try crypto.encryptAesGcm(
+                plaintext: plaintext,
+                key: key,
+                nonce: envelope.nonce,
+                associatedData: associatedData
+            )
+        }
+
+        return try crypto.encrypt(
+            plaintext: plaintext,
             key: key,
             nonce: envelope.nonce,
-            associatedData: VaultJson.associatedData(envelope)
+            associatedData: associatedData
         )
-        return try VaultJson.vaultFromData(plaintext)
+    }
+
+    private func decryptEnvelope(_ envelope: VaultEnvelope, key: Data) throws -> Data {
+        let payload = AeadPayload(ciphertext: envelope.ciphertext, tag: envelope.tag)
+        let associatedData = VaultJson.associatedData(envelope)
+        if envelope.cipher == crypto.portableCipherName {
+            return try crypto.decryptAesGcm(
+                payload: payload,
+                key: key,
+                nonce: envelope.nonce,
+                associatedData: associatedData
+            )
+        }
+
+        return try crypto.decrypt(
+            payload: payload,
+            key: key,
+            nonce: envelope.nonce,
+            associatedData: associatedData
+        )
     }
 }

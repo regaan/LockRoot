@@ -16,6 +16,7 @@ using Avalonia.Platform.Storage;
 using Avalonia.Threading;
 using Lockroot.Linux.Models;
 using Lockroot.Linux.Services;
+using Lockroot.Linux.Security;
 using Lockroot.Linux.Vault;
 
 namespace Lockroot.Linux;
@@ -131,29 +132,29 @@ public sealed class MainWindow : Window
             InfoPanel("Important", "Your master password is the only way to access your vault. Lockroot cannot recover it."),
             PrimaryButton("Create Vault", "arrow", (_, _) =>
             {
-                var pass = password.Text ?? "";
-                var confirmPass = confirm.Text ?? "";
-
-                if (!terms.IsChecked.GetValueOrDefault())
-                {
-                    ShowToast("Terms required", "You must agree to the terms before creating the vault.");
-                    return;
-                }
-
-                if (pass.Length < PasswordRules.MinimumMasterPasswordLength)
-                {
-                    ShowToast("Weak master password", "Use at least 12 characters.");
-                    return;
-                }
-
-                if (pass != confirmPass)
-                {
-                    ShowToast("Password mismatch", "Master password and confirmation do not match.");
-                    return;
-                }
+                var pass = PasswordMemory.FromString(password.Text);
+                var confirmPass = PasswordMemory.FromString(confirm.Text);
 
                 try
                 {
+                    if (!terms.IsChecked.GetValueOrDefault())
+                    {
+                        ShowToast("Terms required", "You must agree to the terms before creating the vault.");
+                        return;
+                    }
+
+                    if (pass.Length < PasswordRules.MinimumMasterPasswordLength)
+                    {
+                        ShowToast("Weak master password", "Use at least 12 characters.");
+                        return;
+                    }
+
+                    if (!pass.AsSpan().SequenceEqual(confirmPass))
+                    {
+                        ShowToast("Password mismatch", "Master password and confirmation do not match.");
+                        return;
+                    }
+
                     _vault.Create(pass);
                     password.Text = "";
                     confirm.Text = "";
@@ -162,6 +163,11 @@ public sealed class MainWindow : Window
                 catch (Exception ex)
                 {
                     ShowToast("Vault creation failed", ex.Message);
+                }
+                finally
+                {
+                    PasswordMemory.Wipe(pass);
+                    PasswordMemory.Wipe(confirmPass);
                 }
             }, maxWidth: 560)
         });
@@ -184,9 +190,18 @@ public sealed class MainWindow : Window
 
             try
             {
-                _vault.Unlock(password.Text ?? "");
+                var pass = PasswordMemory.FromString(password.Text);
+                try
+                {
+                    _vault.Unlock(pass);
+                }
+                finally
+                {
+                    PasswordMemory.Wipe(pass);
+                    password.Text = "";
+                }
+
                 _failedUnlocks = 0;
-                password.Text = "";
                 ShowShell("Home");
             }
             catch
@@ -425,7 +440,7 @@ public sealed class MainWindow : Window
         var title = new TextBox { Text = entry.Title, Watermark = "e.g. My Google Account" };
         var website = new TextBox { Text = entry.Website, Watermark = "e.g. google.com" };
         var username = new TextBox { Text = entry.Username, Watermark = "Enter username" };
-        var password = new TextBox { Text = entry.Password, Watermark = "Enter password" };
+        var password = new TextBox { Text = entry.Password, Watermark = "Enter password", PasswordChar = '*' };
         var notes = new TextBox { Text = entry.Notes, Watermark = "Add a note", AcceptsReturn = true, MinHeight = 120 };
         var tags = new TextBox { Text = entry.TagsDisplay, Watermark = "Tags, comma separated" };
         var favorite = new CheckBox { Content = "Mark as favorite", IsChecked = entry.Favorite };
@@ -646,27 +661,40 @@ public sealed class MainWindow : Window
                         SecondaryButton("Cancel", "close", (_, _) => HideOverlay(), width: 110),
                         PrimaryButton("Change", "check", (_, _) =>
                         {
-                            if ((next.Text ?? "").Length < PasswordRules.MinimumMasterPasswordLength)
-                            {
-                                ShowToast("Weak password", "Use at least 12 characters.");
-                                return;
-                            }
-
-                            if (next.Text != confirm.Text)
-                            {
-                                ShowToast("Password mismatch", "New password and confirmation do not match.");
-                                return;
-                            }
+                            var currentPassword = PasswordMemory.FromString(current.Text);
+                            var nextPassword = PasswordMemory.FromString(next.Text);
+                            var confirmPassword = PasswordMemory.FromString(confirm.Text);
 
                             try
                             {
-                                _vault.ChangeMasterPassword(current.Text ?? "", next.Text ?? "");
+                                if (nextPassword.Length < PasswordRules.MinimumMasterPasswordLength)
+                                {
+                                    ShowToast("Weak password", "Use at least 12 characters.");
+                                    return;
+                                }
+
+                                if (!nextPassword.AsSpan().SequenceEqual(confirmPassword))
+                                {
+                                    ShowToast("Password mismatch", "New password and confirmation do not match.");
+                                    return;
+                                }
+
+                                _vault.ChangeMasterPassword(currentPassword, nextPassword);
+                                current.Text = "";
+                                next.Text = "";
+                                confirm.Text = "";
                                 HideOverlay();
                                 ShowToast("Master password changed", "Your vault has been re-encrypted.");
                             }
                             catch
                             {
                                 ShowToast("Change failed", "Current password is wrong or vault authentication failed.");
+                            }
+                            finally
+                            {
+                                PasswordMemory.Wipe(currentPassword);
+                                PasswordMemory.Wipe(nextPassword);
+                                PasswordMemory.Wipe(confirmPassword);
                             }
                         }, width: 120)
                     }
@@ -720,17 +748,29 @@ public sealed class MainWindow : Window
                                 return;
                             }
 
+                            var passwordChars = PasswordMemory.FromString(exportPassword.Text);
                             try
                             {
-                                var bytes = _vault.Export(exportPassword.Text ?? "");
+                                if (passwordChars.Length < PasswordRules.MinimumMasterPasswordLength)
+                                {
+                                    ShowToast("Weak export password", "Use at least 12 characters.");
+                                    return;
+                                }
+
+                                var bytes = _vault.Export(passwordChars);
                                 await using var stream = await file.OpenWriteAsync();
                                 await stream.WriteAsync(bytes);
+                                exportPassword.Text = "";
                                 HideOverlay();
                                 ShowToast("Export saved", "Encrypted export file created.");
                             }
                             catch (Exception ex)
                             {
                                 ShowToast("Export failed", ex.Message);
+                            }
+                            finally
+                            {
+                                PasswordMemory.Wipe(passwordChars);
                             }
                         }, width: 130)
                     }
@@ -784,7 +824,18 @@ public sealed class MainWindow : Window
                                 using var memory = new MemoryStream();
                                 await input.CopyToAsync(memory);
                                 var bytes = memory.ToArray();
-                                var imported = _vault.DecryptExport(bytes, exportPassword.Text ?? "");
+                                var passwordChars = PasswordMemory.FromString(exportPassword.Text);
+                                VaultDocument imported;
+                                try
+                                {
+                                    imported = _vault.DecryptExport(bytes, passwordChars);
+                                }
+                                finally
+                                {
+                                    PasswordMemory.Wipe(passwordChars);
+                                    exportPassword.Text = "";
+                                }
+
                                 HideOverlay();
                                 ShowImportPreview(imported);
                             }

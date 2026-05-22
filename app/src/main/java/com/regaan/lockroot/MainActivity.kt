@@ -517,7 +517,7 @@ class MainActivity : Activity() {
         content.addView(card().apply {
             addView(securityRow(R.drawable.ic_key, "Argon2id key derivation", "The master password is hardened before it becomes an encryption key."))
             addView(divider())
-            addView(securityRow(R.drawable.ic_shield, "XChaCha20-Poly1305", "Wrong passwords and modified vault files fail authentication."))
+            addView(securityRow(R.drawable.ic_shield, "AES-256-GCM", "Wrong passwords and modified vault files fail authentication."))
             addView(divider())
             addView(securityRow(R.drawable.ic_download, "Encrypted export/import", "Export files use a separate password and a separate key."))
         })
@@ -2033,7 +2033,7 @@ class MainActivity : Activity() {
         private val ABOUT_PROJECT_TEXT = """
             Lockroot is a local-only password manager built around a simple promise: the vault is encrypted on the device and there is no recovery backdoor.
 
-            The vault uses Argon2id key derivation, XChaCha20-Poly1305 authenticated encryption, encrypted export/import, screenshot blocking, clipboard auto-clear, and automatic app locking.
+            The vault uses Argon2id key derivation, AES-256-GCM authenticated encryption, encrypted export/import, screenshot blocking, clipboard auto-clear, and automatic app locking.
         """.trimIndent()
 
         private val PRIVACY_SUMMARY_TEXT = """

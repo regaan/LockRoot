@@ -7,8 +7,11 @@ namespace Lockroot.Linux.Security;
 
 public sealed class VaultFileCodec
 {
-    public const string VaultMagic = "LOCKROOT";
-    public const string ExportMagic = "LOCKROOT-EXPORT";
+    public const string VaultMagic = "Lockroot_VAULT";
+    public const string ExportMagic = "Lockroot_EXPORT";
+    public const string LegacyVaultMagic = "LOCKROOT";
+    public const string LegacyExportMagic = "LOCKROOT-EXPORT";
+    public const int CurrentVersion = 2;
 
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
@@ -18,7 +21,7 @@ public sealed class VaultFileCodec
 
     private readonly CryptoService _crypto = new();
 
-    public (byte[] Bytes, byte[] Key, KdfParams KdfParams) CreateSession(VaultDocument vault, string password)
+    public (byte[] Bytes, byte[] Key, KdfParams KdfParams) CreateSession(VaultDocument vault, ReadOnlySpan<char> password)
     {
         var kdfParams = _crypto.CreateKdfParams();
         var key = _crypto.DeriveKey(password, kdfParams);
@@ -34,7 +37,7 @@ public sealed class VaultFileCodec
         }
     }
 
-    public VaultSession DecryptSession(byte[] bytes, string password)
+    public VaultSession DecryptSession(byte[] bytes, ReadOnlySpan<char> password)
     {
         var envelope = DecodeEnvelope(bytes);
         ValidateEnvelope(envelope, VaultMagic);
@@ -53,13 +56,26 @@ public sealed class VaultFileCodec
         }
     }
 
-    public byte[] EncryptWithKey(VaultDocument vault, byte[] key, KdfParams kdfParams, string magic = VaultMagic)
+    public bool NeedsMigration(byte[] bytes, string expectedMagic = VaultMagic)
+    {
+        var envelope = DecodeEnvelope(bytes);
+        return envelope.Magic != expectedMagic ||
+               envelope.Version != CurrentVersion ||
+               envelope.Cipher != CryptoService.CipherName;
+    }
+
+    public byte[] EncryptWithKey(
+        VaultDocument vault,
+        byte[] key,
+        KdfParams kdfParams,
+        string magic = VaultMagic,
+        int version = CurrentVersion)
     {
         vault.UpdatedAt = DateTimeOffset.UtcNow;
 
         var plaintext = JsonSerializer.SerializeToUtf8Bytes(vault, JsonOptions);
         var nonce = RandomNumberGenerator.GetBytes(CryptoService.NonceBytes);
-        var envelope = CreateEnvelope(magic, kdfParams, nonce);
+        var envelope = CreateEnvelope(magic, kdfParams, nonce, version);
 
         try
         {
@@ -67,7 +83,7 @@ public sealed class VaultFileCodec
             var payload = _crypto.Encrypt(plaintext, key, nonce, aad);
             envelope.Ciphertext = Convert.ToBase64String(payload.Ciphertext);
             envelope.Tag = Convert.ToBase64String(payload.Tag);
-            return JsonSerializer.SerializeToUtf8Bytes(envelope, JsonOptions);
+            return EncodeEnvelope(envelope);
         }
         finally
         {
@@ -76,14 +92,18 @@ public sealed class VaultFileCodec
         }
     }
 
-    public byte[] Encrypt(VaultDocument vault, string password, string magic = VaultMagic)
+    public byte[] Encrypt(
+        VaultDocument vault,
+        ReadOnlySpan<char> password,
+        string magic = VaultMagic,
+        int version = CurrentVersion)
     {
         var kdfParams = _crypto.CreateKdfParams();
         var key = _crypto.DeriveKey(password, kdfParams);
 
         try
         {
-            return EncryptWithKey(vault, key, kdfParams, magic);
+            return EncryptWithKey(vault, key, kdfParams, magic, version);
         }
         finally
         {
@@ -91,7 +111,7 @@ public sealed class VaultFileCodec
         }
     }
 
-    public VaultDocument Decrypt(byte[] bytes, string password, string magic = VaultMagic)
+    public VaultDocument Decrypt(byte[] bytes, ReadOnlySpan<char> password, string magic = VaultMagic)
     {
         var envelope = DecodeEnvelope(bytes);
         ValidateEnvelope(envelope, magic);
@@ -134,15 +154,84 @@ public sealed class VaultFileCodec
         }
     }
 
-    private static VaultEnvelope DecodeEnvelope(byte[] bytes) =>
-        JsonSerializer.Deserialize<VaultEnvelope>(bytes, JsonOptions)
-        ?? throw new CryptographicException("Invalid vault file.");
+    private static VaultEnvelope DecodeEnvelope(byte[] bytes)
+    {
+        using var document = JsonDocument.Parse(bytes);
+        var root = document.RootElement;
+        var kdf = root.GetProperty("kdf");
+        var cipher = root.GetProperty("cipher");
 
-    private static VaultEnvelope CreateEnvelope(string magic, KdfParams kdfParams, byte[] nonce) =>
+        string kdfName;
+        Argon2idEnvelope argon2id;
+        if (kdf.ValueKind == JsonValueKind.Object)
+        {
+            kdfName = RequiredString(kdf, "name");
+            argon2id = new Argon2idEnvelope
+            {
+                Memory = kdf.GetProperty("memory").GetInt32(),
+                Iterations = kdf.GetProperty("iterations").GetInt32(),
+                Parallelism = kdf.GetProperty("parallelism").GetInt32(),
+                Salt = RequiredString(kdf, "salt")
+            };
+        }
+        else
+        {
+            kdfName = kdf.GetString() ?? "";
+            var legacyArgon2id = root.GetProperty("argon2id");
+            argon2id = new Argon2idEnvelope
+            {
+                Memory = legacyArgon2id.GetProperty("memory").GetInt32(),
+                Iterations = legacyArgon2id.GetProperty("iterations").GetInt32(),
+                Parallelism = legacyArgon2id.GetProperty("parallelism").GetInt32(),
+                Salt = RequiredString(legacyArgon2id, "salt")
+            };
+        }
+
+        var cipherName = cipher.ValueKind == JsonValueKind.Object ? RequiredString(cipher, "name") : cipher.GetString() ?? "";
+        var nonce = cipher.ValueKind == JsonValueKind.Object ? RequiredString(cipher, "nonce") : RequiredString(root, "nonce");
+
+        return new VaultEnvelope
+        {
+            Magic = RequiredString(root, "magic"),
+            Version = root.GetProperty("version").GetInt32(),
+            Kdf = kdfName,
+            Argon2id = argon2id,
+            Cipher = cipherName,
+            Nonce = nonce,
+            Ciphertext = RequiredString(root, "ciphertext"),
+            Tag = RequiredString(root, "tag")
+        };
+    }
+
+    private static byte[] EncodeEnvelope(VaultEnvelope envelope) =>
+        JsonSerializer.SerializeToUtf8Bytes(
+            new
+            {
+                magic = envelope.Magic,
+                version = envelope.Version,
+                kdf = new
+                {
+                    name = envelope.Kdf,
+                    memory = envelope.Argon2id.Memory,
+                    iterations = envelope.Argon2id.Iterations,
+                    parallelism = envelope.Argon2id.Parallelism,
+                    salt = envelope.Argon2id.Salt
+                },
+                cipher = new
+                {
+                    name = envelope.Cipher,
+                    nonce = envelope.Nonce
+                },
+                ciphertext = envelope.Ciphertext,
+                tag = envelope.Tag
+            },
+            JsonOptions);
+
+    private static VaultEnvelope CreateEnvelope(string magic, KdfParams kdfParams, byte[] nonce, int version) =>
         new()
         {
             Magic = magic,
-            Version = 1,
+            Version = version,
             Kdf = CryptoService.KdfName,
             Cipher = CryptoService.CipherName,
             Nonce = Convert.ToBase64String(nonce),
@@ -157,16 +246,26 @@ public sealed class VaultFileCodec
 
     private static void ValidateEnvelope(VaultEnvelope envelope, string expectedMagic)
     {
-        if (envelope.Magic != expectedMagic)
+        if (envelope.Magic != expectedMagic && !IsAcceptedLegacyMagic(envelope.Magic, expectedMagic))
         {
             throw new CryptographicException("Unsupported vault file type.");
         }
 
-        if (envelope.Version != 1 || envelope.Kdf != CryptoService.KdfName || envelope.Cipher != CryptoService.CipherName)
+        if ((envelope.Version != 1 && envelope.Version != CurrentVersion) ||
+            envelope.Kdf != CryptoService.KdfName ||
+            envelope.Cipher != CryptoService.CipherName)
         {
             throw new CryptographicException("Unsupported vault format.");
         }
     }
+
+    private static bool IsAcceptedLegacyMagic(string actualMagic, string expectedMagic) =>
+        (expectedMagic == VaultMagic && actualMagic == LegacyVaultMagic) ||
+        (expectedMagic == ExportMagic && actualMagic == LegacyExportMagic);
+
+    private static string RequiredString(JsonElement element, string propertyName) =>
+        element.GetProperty(propertyName).GetString()
+        ?? throw new CryptographicException("Invalid vault file.");
 
     private static KdfParams KdfFromEnvelope(VaultEnvelope envelope)
     {

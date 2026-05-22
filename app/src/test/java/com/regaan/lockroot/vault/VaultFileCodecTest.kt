@@ -6,13 +6,17 @@ import com.regaan.lockroot.crypto.CryptoService
 import com.regaan.lockroot.crypto.KdfParams
 import com.regaan.lockroot.crypto.LegacyAesGcmCipher
 import com.regaan.lockroot.crypto.TestAeadCipher
+import com.regaan.lockroot.crypto.UnsupportedVaultFormatException
 import org.json.JSONObject
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertThrows
 import org.junit.Test
 
 class VaultFileCodecTest {
-    private val codec = VaultFileCodec(CryptoService(aeadCipher = TestAeadCipher()))
+    private val codec = VaultFileCodec(
+        writeCrypto = CryptoService(aeadCipher = LegacyAesGcmCipher()),
+        xChaChaCrypto = CryptoService(aeadCipher = TestAeadCipher()),
+    )
 
     @Test
     fun correctPasswordDecryptsVault() {
@@ -49,17 +53,76 @@ class VaultFileCodecTest {
     }
 
     @Test
-    fun newVaultsUseXChaCha20Poly1305() {
+    fun modifiedCiphertextFailsAuthentication() {
         val encrypted = codec.encryptVault(sampleVault(), "strong master password".toCharArray())
         val root = JSONObject(String(encrypted))
+        val ciphertext = Base64Codec.decode(root.getString("ciphertext"))
+        ciphertext[0] = (ciphertext[0].toInt() xor 1).toByte()
+        root.put("ciphertext", Base64Codec.encode(ciphertext))
 
-        assertEquals("xchacha20-poly1305", root.getJSONObject("cipher").getString("name"))
+        assertThrows(AuthenticationFailedException::class.java) {
+            codec.decryptVault(root.toString().toByteArray(), "strong master password".toCharArray())
+        }
     }
 
     @Test
-    fun legacyAesGcmVaultsRemainReadable() {
-        val legacyCodec = VaultFileCodec(CryptoService(aeadCipher = LegacyAesGcmCipher()))
-        val encrypted = legacyCodec.encryptVault(sampleVault(), "strong master password".toCharArray())
+    fun modifiedTagFailsAuthentication() {
+        val encrypted = codec.encryptVault(sampleVault(), "strong master password".toCharArray())
+        val root = JSONObject(String(encrypted))
+        val tag = Base64Codec.decode(root.getString("tag"))
+        tag[0] = (tag[0].toInt() xor 1).toByte()
+        root.put("tag", Base64Codec.encode(tag))
+
+        assertThrows(AuthenticationFailedException::class.java) {
+            codec.decryptVault(root.toString().toByteArray(), "strong master password".toCharArray())
+        }
+    }
+
+    @Test
+    fun modifiedValidKdfHeaderFailsAuthentication() {
+        val encrypted = codec.encryptVault(sampleVault(), "strong master password".toCharArray())
+        val root = JSONObject(String(encrypted))
+        root.getJSONObject("kdf").put("iterations", 4)
+
+        assertThrows(AuthenticationFailedException::class.java) {
+            codec.decryptVault(root.toString().toByteArray(), "strong master password".toCharArray())
+        }
+    }
+
+    @Test
+    fun exportFileCannotBeOpenedAsMainVault() {
+        val export = codec.encryptVault(
+            sampleVault(),
+            "export password value".toCharArray(),
+            VaultFileCodec.EXPORT_MAGIC,
+        )
+
+        assertThrows(UnsupportedVaultFormatException::class.java) {
+            codec.decryptVault(export, "export password value".toCharArray())
+        }
+    }
+
+    @Test
+    fun newVaultsUsePortableV2AesGcm() {
+        val encrypted = codec.encryptVault(sampleVault(), "strong master password".toCharArray())
+        val root = JSONObject(String(encrypted))
+
+        assertEquals(2, root.getInt("version"))
+        assertEquals("aes-256-gcm", root.getJSONObject("cipher").getString("name"))
+        assertEquals(12, Base64Codec.decode(root.getJSONObject("cipher").getString("nonce")).size)
+    }
+
+    @Test
+    fun v1AesGcmVaultsRemainReadable() {
+        val legacyCodec = VaultFileCodec(
+            writeCrypto = CryptoService(aeadCipher = LegacyAesGcmCipher()),
+            xChaChaCrypto = CryptoService(aeadCipher = TestAeadCipher()),
+        )
+        val encrypted = legacyCodec.encryptVault(
+            sampleVault(),
+            "strong master password".toCharArray(),
+            version = 1,
+        )
 
         val decrypted = codec.decryptVault(encrypted, "strong master password".toCharArray())
 
@@ -104,7 +167,7 @@ class VaultFileCodecTest {
     private fun sampleEnvelope(nonce: ByteArray): VaultEnvelope =
         VaultEnvelope(
             magic = VaultFileCodec.VAULT_MAGIC,
-            version = 1,
+            version = VaultFileCodec.CURRENT_VERSION,
             kdf = "argon2id",
             kdfParams = KdfParams(
                 memoryKiB = 19_456,

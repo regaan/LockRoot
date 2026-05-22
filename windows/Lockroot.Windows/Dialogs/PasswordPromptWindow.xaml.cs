@@ -1,4 +1,5 @@
 using System.Windows;
+using Lockroot.Windows.Security;
 using Lockroot.Windows.Services;
 
 namespace Lockroot.Windows.Dialogs;
@@ -20,7 +21,7 @@ public partial class PasswordPromptWindow : Window
         PasswordBox.Focus();
     }
 
-    public string Password { get; private set; } = "";
+    public char[] Password { get; private set; } = [];
 
     private void ContinueClick(object sender, RoutedEventArgs e)
     {
@@ -38,7 +39,9 @@ public partial class PasswordPromptWindow : Window
             return;
         }
 
-        Password = PasswordBox.Password;
+        Password = PasswordMemory.FromString(PasswordBox.Password);
+        PasswordBox.Password = "";
+        ConfirmPasswordBox.Password = "";
         DialogResult = true;
     }
 
@@ -51,5 +54,24 @@ public partial class PasswordPromptWindow : Window
     {
         base.OnSourceInitialized(e);
         WindowCaptureProtection.Apply(this);
+    }
+
+    protected override void OnClosed(EventArgs e)
+    {
+        PasswordBox.Password = "";
+        ConfirmPasswordBox.Password = "";
+
+        if (DialogResult != true)
+        {
+            WipePassword();
+        }
+
+        base.OnClosed(e);
+    }
+
+    public void WipePassword()
+    {
+        PasswordMemory.Wipe(Password);
+        Password = [];
     }
 }
