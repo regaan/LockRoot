@@ -22,16 +22,22 @@ public sealed class CryptoService
             Salt = RandomNumberGenerator.GetBytes(32)
         };
 
-    public byte[] DeriveKey(string password, KdfParams parameters)
+    public byte[] DeriveKey(ReadOnlySpan<char> password, KdfParams parameters)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(password);
+        if (IsEmptyOrWhiteSpace(password))
+        {
+            throw new ArgumentException("Password is required.", nameof(password));
+        }
+
         parameters.Validate();
 
-        var passwordBytes = Encoding.UTF8.GetBytes(password);
+        var passwordBytes = GC.AllocateArray<byte>(Encoding.UTF8.GetByteCount(password), pinned: true);
         var key = GC.AllocateArray<byte>(KeyBytes, pinned: true);
 
         try
         {
+            Encoding.UTF8.GetBytes(password, passwordBytes);
+
             var generator = new Argon2BytesGenerator();
             var argon2Params = new Argon2Parameters.Builder(Argon2Parameters.Argon2id)
                 .WithVersion(Argon2Parameters.Version13)
@@ -99,5 +105,23 @@ public sealed class CryptoService
         {
             throw new CryptographicException("AES-GCM nonce must be 12 bytes.");
         }
+    }
+
+    private static bool IsEmptyOrWhiteSpace(ReadOnlySpan<char> value)
+    {
+        if (value.IsEmpty)
+        {
+            return true;
+        }
+
+        foreach (var character in value)
+        {
+            if (!char.IsWhiteSpace(character))
+            {
+                return false;
+            }
+        }
+
+        return true;
     }
 }

@@ -45,6 +45,29 @@ class PasswordGeneratorTest {
     }
 
     @Test
+    fun generatedPasswordExcludesUnselectedGroups() {
+        val password = PasswordGenerator().generate(
+            length = 20,
+            lowercase = true,
+            uppercase = false,
+            numbers = false,
+            symbols = false,
+        )
+
+        assertTrue(password.all { it in 'a'..'z' })
+        assertTrue(password.none { it.isUpperCase() })
+        assertTrue(password.none { it.isDigit() })
+        assertTrue(password.none { "!@#$%^&*()-_=+[]{};:,.?".contains(it) })
+    }
+
+    @Test
+    fun generatedPasswordDoesNotUseAmbiguousCharacters() {
+        val password = PasswordGenerator().generate(length = 128)
+
+        assertTrue(password.none { "lIO01".contains(it) })
+    }
+
+    @Test
     fun generatorRejectsEmptyCharacterGroupSelection() {
         assertThrows(IllegalArgumentException::class.java) {
             PasswordGenerator().generate(

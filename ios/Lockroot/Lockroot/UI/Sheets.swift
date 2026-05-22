@@ -49,6 +49,8 @@ struct ExportPasswordSheet: View {
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Export") {
                         onExport(password, confirm)
+                        password = ""
+                        confirm = ""
                     }
                 }
             }
@@ -79,6 +81,7 @@ struct ImportPasswordSheet: View {
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Preview") {
                         onImport(password)
+                        password = ""
                     }
                 }
             }
@@ -216,6 +219,9 @@ struct ChangeMasterPasswordSheet: View {
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Save") {
                         viewModel.changeMasterPassword(current: current, next: next, confirm: confirm)
+                        current = ""
+                        next = ""
+                        confirm = ""
                         dismiss()
                     }
                 }

@@ -3,7 +3,7 @@ namespace Lockroot.Windows.Security;
 public sealed class VaultEnvelope
 {
     public string Magic { get; set; } = VaultFileCodec.VaultMagic;
-    public int Version { get; set; } = 1;
+    public int Version { get; set; } = VaultFileCodec.CurrentVersion;
     public string Kdf { get; set; } = CryptoService.KdfName;
     public Argon2idEnvelope Argon2id { get; set; } = new();
     public string Cipher { get; set; } = CryptoService.CipherName;

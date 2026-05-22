@@ -87,6 +87,8 @@ struct SetupView: View {
 
                 Button("Create Vault") {
                     viewModel.createVault(password: password, confirm: confirm, acceptedTerms: acceptedTerms)
+                    password = ""
+                    confirm = ""
                 }
                 .buttonStyle(PrimaryButtonStyle())
             }

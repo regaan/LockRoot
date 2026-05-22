@@ -28,9 +28,13 @@ class VaultRepository(
     }
 
     fun unlock(password: CharArray): Vault {
-        val newSession = codec.decryptSession(storage.read(), password)
+        val encrypted = storage.read()
+        val newSession = codec.decryptSession(encrypted, password)
         session?.clear()
         session = newSession
+        if (codec.needsMigration(encrypted)) {
+            save()
+        }
         return newSession.vault
     }
 

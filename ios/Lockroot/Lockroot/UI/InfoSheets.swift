@@ -6,7 +6,7 @@ struct SecurityCenterSheet: View {
     private let items = [
         ("No network code", "The iOS app has no account, sync, analytics, ads, or telemetry code."),
         ("Argon2id key derivation", "Master and export passwords are hardened before encryption."),
-        ("XChaCha20-Poly1305", "Vault and export files use authenticated encryption."),
+        ("AES-256-GCM", "Vault and export files use authenticated encryption."),
         ("Wrong password fails", "Incorrect passwords and tampered files fail authentication."),
         ("Clipboard auto-clear", "Copied secrets are cleared from the pasteboard after a short delay."),
         ("App lock on background", "The in-memory vault locks when the app leaves the foreground."),

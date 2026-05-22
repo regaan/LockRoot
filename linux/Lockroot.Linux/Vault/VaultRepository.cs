@@ -14,7 +14,7 @@ public sealed class VaultRepository : IDisposable
     public VaultDocument CurrentVault => _session?.Vault ?? throw new InvalidOperationException("Vault is locked.");
     public string VaultPath => _storage.VaultPath;
 
-    public void Create(string password)
+    public void Create(ReadOnlySpan<char> password)
     {
         var vault = new VaultDocument();
         var sessionData = _codec.CreateSession(vault, password);
@@ -24,11 +24,16 @@ public sealed class VaultRepository : IDisposable
         _session = new VaultSession(vault, sessionData.Key, sessionData.KdfParams);
     }
 
-    public void Unlock(string password)
+    public void Unlock(ReadOnlySpan<char> password)
     {
-        var session = _codec.DecryptSession(_storage.Read(), password);
+        var encrypted = _storage.Read();
+        var session = _codec.DecryptSession(encrypted, password);
         _session?.Dispose();
         _session = session;
+        if (_codec.NeedsMigration(encrypted))
+        {
+            Save();
+        }
     }
 
     public void Lock()
@@ -69,10 +74,10 @@ public sealed class VaultRepository : IDisposable
         Save();
     }
 
-    public byte[] Export(string exportPassword) =>
+    public byte[] Export(ReadOnlySpan<char> exportPassword) =>
         _codec.Encrypt(Clone(CurrentVault), exportPassword, VaultFileCodec.ExportMagic);
 
-    public VaultDocument DecryptExport(byte[] bytes, string exportPassword) =>
+    public VaultDocument DecryptExport(byte[] bytes, ReadOnlySpan<char> exportPassword) =>
         _codec.Decrypt(bytes, exportPassword, VaultFileCodec.ExportMagic);
 
     public int Merge(VaultDocument imported)
@@ -102,7 +107,7 @@ public sealed class VaultRepository : IDisposable
         Save();
     }
 
-    public void ChangeMasterPassword(string currentPassword, string newPassword)
+    public void ChangeMasterPassword(ReadOnlySpan<char> currentPassword, ReadOnlySpan<char> newPassword)
     {
         var verified = _codec.DecryptSession(_storage.Read(), currentPassword);
         verified.Dispose();

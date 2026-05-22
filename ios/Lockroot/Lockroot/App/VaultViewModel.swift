@@ -58,7 +58,9 @@ final class VaultViewModel: ObservableObject {
         }
 
         do {
-            let vault = try repository.create(password: password)
+            let vault = try withPasswordData(password) { passwordData in
+                try repository.create(passwordData: passwordData)
+            }
             entries = vault.entries
             phase = .unlocked
         } catch {
@@ -73,7 +75,9 @@ final class VaultViewModel: ObservableObject {
         }
 
         do {
-            let vault = try repository.unlock(password: password)
+            let vault = try withPasswordData(password) { passwordData in
+                try repository.unlock(passwordData: passwordData)
+            }
             entries = vault.entries
             phase = .unlocked
             failedUnlockAttempts = 0
@@ -125,7 +129,14 @@ final class VaultViewModel: ObservableObject {
         }
 
         do {
-            try repository.changeMasterPassword(currentPassword: current, newPassword: next)
+            try withPasswordData(current) { currentData in
+                try withPasswordData(next) { nextData in
+                    try repository.changeMasterPassword(
+                        currentPasswordData: currentData,
+                        newPasswordData: nextData
+                    )
+                }
+            }
             entries = repository.currentEntries
             infoMessage = "Master password changed."
         } catch {
@@ -144,7 +155,9 @@ final class VaultViewModel: ObservableObject {
         }
 
         do {
-            return try repository.exportUnlocked(exportPassword: password)
+            return try withPasswordData(password) { passwordData in
+                try repository.exportUnlocked(exportPasswordData: passwordData)
+            }
         } catch {
             errorMessage = error.localizedDescription
             return nil
@@ -153,7 +166,9 @@ final class VaultViewModel: ObservableObject {
 
     func previewImport(data: Data, password: String) {
         do {
-            pendingImport = try repository.decryptExport(data: data, exportPassword: password)
+            pendingImport = try withPasswordData(password) { passwordData in
+                try repository.decryptExport(data: data, exportPasswordData: passwordData)
+            }
         } catch {
             errorMessage = "Wrong export password or corrupted export file."
         }
@@ -235,5 +250,11 @@ final class VaultViewModel: ObservableObject {
             return nil
         }
         return remaining
+    }
+
+    private func withPasswordData<T>(_ password: String, _ body: (Data) throws -> T) rethrows -> T {
+        var data = Data(password.utf8)
+        defer { CryptoService().wipe(&data) }
+        return try body(data)
     }
 }

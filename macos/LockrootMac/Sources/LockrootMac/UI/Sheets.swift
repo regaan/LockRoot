@@ -27,6 +27,8 @@ struct ExportPasswordSheet: View {
                     .buttonStyle(SecondaryButtonStyle())
                 Button("Continue") {
                     onExport(password, confirm)
+                    password = ""
+                    confirm = ""
                 }
                 .buttonStyle(PrimaryButtonStyle())
                 .disabled(password.isEmpty || confirm.isEmpty)
@@ -60,6 +62,7 @@ struct ImportPasswordSheet: View {
                     .buttonStyle(SecondaryButtonStyle())
                 Button("Preview") {
                     onImport(password)
+                    password = ""
                 }
                 .buttonStyle(PrimaryButtonStyle())
                 .disabled(password.isEmpty)
@@ -235,6 +238,9 @@ struct ChangeMasterPasswordSheet: View {
                     .buttonStyle(SecondaryButtonStyle())
                 Button("Save") {
                     viewModel.changeMasterPassword(current: current, next: next, confirm: confirm)
+                    current = ""
+                    next = ""
+                    confirm = ""
                     dismiss()
                 }
                 .buttonStyle(PrimaryButtonStyle())

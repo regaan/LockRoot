@@ -1,8 +1,11 @@
 package com.regaan.lockroot.vault
 
 import com.regaan.lockroot.crypto.AuthenticationFailedException
+import com.regaan.lockroot.crypto.Base64Codec
 import com.regaan.lockroot.crypto.CryptoService
+import com.regaan.lockroot.crypto.LegacyAesGcmCipher
 import com.regaan.lockroot.crypto.TestAeadCipher
+import org.json.JSONObject
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertThrows
@@ -63,6 +66,32 @@ class VaultRepositoryTest {
 
         assertThrows(AuthenticationFailedException::class.java) {
             repository.decryptExport(export, "master password value".toCharArray())
+        }
+    }
+
+    @Test
+    fun exportUsesPortableAesGcmEnvelope() {
+        val repository = VaultRepository(InMemoryStore(), testCodec())
+        repository.create("master password value".toCharArray())
+
+        val export = repository.exportUnlocked("export password value".toCharArray())
+        val root = JSONObject(String(export))
+
+        assertEquals(VaultFileCodec.EXPORT_MAGIC, root.getString("magic"))
+        assertEquals("argon2id", root.getJSONObject("kdf").getString("name"))
+        assertEquals("aes-256-gcm", root.getJSONObject("cipher").getString("name"))
+        assertEquals(12, Base64Codec.decode(root.getJSONObject("cipher").getString("nonce")).size)
+    }
+
+    @Test
+    fun exportRejectsWrongExportPassword() {
+        val repository = VaultRepository(InMemoryStore(), testCodec())
+        repository.create("master password value".toCharArray())
+
+        val export = repository.exportUnlocked("export password value".toCharArray())
+
+        assertThrows(AuthenticationFailedException::class.java) {
+            repository.decryptExport(export, "wrong export password".toCharArray())
         }
     }
 
@@ -153,6 +182,78 @@ class VaultRepositoryTest {
         assertEquals("Imported", repository.unlockedVault!!.entries.single().title)
     }
 
+    @Test
+    fun replacedImportedVaultIsSavedToDisk() {
+        val store = InMemoryStore()
+        val repository = VaultRepository(store, testCodec())
+        repository.create("master password value".toCharArray()).entries.add(
+            VaultEntry(
+                title = "Current",
+                website = "",
+                username = "",
+                password = "current-secret",
+                notes = "",
+            ),
+        )
+
+        repository.replaceUnlocked(
+            Vault(
+                entries = mutableListOf(
+                    VaultEntry(
+                        title = "Imported",
+                        website = "",
+                        username = "",
+                        password = "imported-secret",
+                        notes = "",
+                    ),
+                ),
+            ),
+        )
+        repository.save()
+        repository.lock()
+
+        val unlocked = repository.unlock("master password value".toCharArray())
+
+        assertEquals("Imported", unlocked.entries.single().title)
+        assertEquals("imported-secret", unlocked.entries.single().password)
+    }
+
+    @Test
+    fun v1AesGcmVaultIsMigratedToPortableV2OnUnlock() {
+        val store = InMemoryStore()
+        val legacyCodec = VaultFileCodec(
+            writeCrypto = CryptoService(aeadCipher = LegacyAesGcmCipher()),
+            xChaChaCrypto = CryptoService(aeadCipher = TestAeadCipher()),
+        )
+        val legacyVault = Vault(
+            entries = mutableListOf(
+                VaultEntry(
+                    title = "Legacy",
+                    website = "",
+                    username = "",
+                    password = "legacy-secret",
+                    notes = "",
+                ),
+            ),
+        )
+        store.write(
+            legacyCodec.encryptVault(
+                legacyVault,
+                "master password value".toCharArray(),
+                version = 1,
+            ),
+        )
+
+        val repository = VaultRepository(store, testCodec())
+        repository.unlock("master password value".toCharArray())
+
+        val root = JSONObject(String(store.read()))
+
+        assertEquals(2, root.getInt("version"))
+        assertEquals("aes-256-gcm", root.getJSONObject("cipher").getString("name"))
+        assertEquals(12, Base64Codec.decode(root.getJSONObject("cipher").getString("nonce")).size)
+    }
+
     private class InMemoryStore : EncryptedVaultStore {
         private var bytes: ByteArray? = null
 
@@ -165,5 +266,8 @@ class VaultRepositoryTest {
         }
     }
 
-    private fun testCodec(): VaultFileCodec = VaultFileCodec(CryptoService(aeadCipher = TestAeadCipher()))
+    private fun testCodec(): VaultFileCodec = VaultFileCodec(
+        writeCrypto = CryptoService(aeadCipher = LegacyAesGcmCipher()),
+        xChaChaCrypto = CryptoService(aeadCipher = TestAeadCipher()),
+    )
 }

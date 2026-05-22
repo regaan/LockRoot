@@ -1,3 +1,4 @@
+import AppKit
 import SwiftUI
 
 @main
@@ -15,6 +16,10 @@ struct LockrootMacApp: App {
                     if phase != .active, viewModel.phase == .unlocked {
                         viewModel.lock()
                     }
+                }
+                .onReceive(NotificationCenter.default.publisher(for: NSApplication.willTerminateNotification)) { _ in
+                    viewModel.clearClipboard()
+                    viewModel.lock()
                 }
         }
         .commands {

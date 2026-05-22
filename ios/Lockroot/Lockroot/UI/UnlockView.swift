@@ -29,7 +29,10 @@ struct UnlockView: View {
                             .textContentType(.password)
                             .focused($focused)
                             .submitLabel(.go)
-                            .onSubmit { viewModel.unlock(password: password) }
+                            .onSubmit {
+                                viewModel.unlock(password: password)
+                                password = ""
+                            }
                             .font(.headline)
                             .foregroundStyle(LockrootTheme.ink)
                             .tint(LockrootTheme.green)
@@ -40,6 +43,7 @@ struct UnlockView: View {
 
                         Button("Unlock") {
                             viewModel.unlock(password: password)
+                            password = ""
                         }
                         .buttonStyle(PrimaryButtonStyle())
                     }

@@ -39,21 +39,47 @@ object VaultJson {
 
     fun envelopeFromBytes(bytes: ByteArray): VaultEnvelope {
         val root = JSONObject(String(bytes, StandardCharsets.UTF_8))
-        val kdf = root.getJSONObject("kdf")
-        val cipher = root.getJSONObject("cipher")
+        val kdfValue = root.get("kdf")
+        val cipherValue = root.get("cipher")
+
+        val kdfName: String
+        val kdfParams: KdfParams
+        if (kdfValue is JSONObject) {
+            kdfName = kdfValue.getString("name")
+            kdfParams = KdfParams(
+                memoryKiB = kdfValue.getInt("memory"),
+                iterations = kdfValue.getInt("iterations"),
+                parallelism = kdfValue.getInt("parallelism"),
+                salt = Base64Codec.decode(kdfValue.getString("salt")),
+            )
+        } else {
+            val argon2id = root.getJSONObject("argon2id")
+            kdfName = kdfValue.toString()
+            kdfParams = KdfParams(
+                memoryKiB = argon2id.getInt("memory"),
+                iterations = argon2id.getInt("iterations"),
+                parallelism = argon2id.getInt("parallelism"),
+                salt = Base64Codec.decode(argon2id.getString("salt")),
+            )
+        }
+
+        val cipherName: String
+        val nonce: ByteArray
+        if (cipherValue is JSONObject) {
+            cipherName = cipherValue.getString("name")
+            nonce = Base64Codec.decode(cipherValue.getString("nonce"))
+        } else {
+            cipherName = cipherValue.toString()
+            nonce = Base64Codec.decode(root.getString("nonce"))
+        }
 
         return VaultEnvelope(
             magic = root.getString("magic"),
             version = root.getInt("version"),
-            kdf = kdf.getString("name"),
-            kdfParams = KdfParams(
-                memoryKiB = kdf.getInt("memory"),
-                iterations = kdf.getInt("iterations"),
-                parallelism = kdf.getInt("parallelism"),
-                salt = Base64Codec.decode(kdf.getString("salt")),
-            ),
-            cipher = cipher.getString("name"),
-            nonce = Base64Codec.decode(cipher.getString("nonce")),
+            kdf = kdfName,
+            kdfParams = kdfParams,
+            cipher = cipherName,
+            nonce = nonce,
             ciphertext = Base64Codec.decode(root.getString("ciphertext")),
             tag = Base64Codec.decode(root.getString("tag")),
         )
@@ -80,10 +106,10 @@ object VaultJson {
         expectedMagic: String,
         supportedCiphers: Set<String> = setOf("xchacha20-poly1305"),
     ) {
-        if (envelope.magic != expectedMagic) {
+        if (envelope.magic != expectedMagic && !acceptedLegacyMagic(envelope.magic, expectedMagic)) {
             throw UnsupportedVaultFormatException("Unsupported file type.")
         }
-        if (envelope.version != 1) {
+        if (envelope.version !in setOf(1, VaultFileCodec.CURRENT_VERSION)) {
             throw UnsupportedVaultFormatException("Unsupported vault version.")
         }
         if (envelope.kdf != "argon2id") {
@@ -93,6 +119,10 @@ object VaultJson {
             throw UnsupportedVaultFormatException("Unsupported cipher.")
         }
     }
+
+    private fun acceptedLegacyMagic(actualMagic: String, expectedMagic: String): Boolean =
+        (expectedMagic == VaultFileCodec.VAULT_MAGIC && actualMagic == "LOCKROOT") ||
+            (expectedMagic == VaultFileCodec.EXPORT_MAGIC && actualMagic == "LOCKROOT-EXPORT")
 
     private fun vaultToJson(vault: Vault): JSONObject {
         val entries = JSONArray()

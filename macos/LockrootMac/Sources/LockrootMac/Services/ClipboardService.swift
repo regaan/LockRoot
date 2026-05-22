@@ -3,6 +3,7 @@ import Foundation
 
 final class ClipboardService {
     private var clearTask: Task<Void, Never>?
+    private var ownedChangeCount: Int?
 
     deinit {
         clearTask?.cancel()
@@ -14,6 +15,7 @@ final class ClipboardService {
         pasteboard.clearContents()
         pasteboard.setString(text, forType: .string)
         let changeCount = pasteboard.changeCount
+        ownedChangeCount = changeCount
 
         clearTask?.cancel()
         clearTask = Task { [changeCount] in
@@ -24,6 +26,22 @@ final class ClipboardService {
                     NSPasteboard.general.clearContents()
                 }
             }
+        }
+    }
+
+    @MainActor
+    func clearOwnedClipboard() {
+        clearTask?.cancel()
+        clearTask = nil
+
+        defer { ownedChangeCount = nil }
+
+        guard let ownedChangeCount else {
+            return
+        }
+
+        if NSPasteboard.general.changeCount == ownedChangeCount {
+            NSPasteboard.general.clearContents()
         }
     }
 

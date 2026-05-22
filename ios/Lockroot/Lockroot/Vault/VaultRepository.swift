@@ -19,16 +19,28 @@ final class VaultRepository {
     }
 
     func create(password: String) throws -> Vault {
+        try create(passwordData: Data(password.utf8))
+    }
+
+    func create(passwordData: Data) throws -> Vault {
         let vault = Vault()
-        let (encrypted, newSession) = try codec.createSession(vault: vault, password: password)
+        let (encrypted, newSession) = try codec.createSession(vault: vault, passwordData: passwordData)
         try storage.write(encrypted)
         session = newSession
         return vault
     }
 
     func unlock(password: String) throws -> Vault {
-        let newSession = try codec.decryptSession(data: storage.read(), password: password)
+        try unlock(passwordData: Data(password.utf8))
+    }
+
+    func unlock(passwordData: Data) throws -> Vault {
+        let encrypted = storage.read()
+        let newSession = try codec.decryptSession(data: encrypted, passwordData: passwordData)
         session = newSession
+        if try codec.needsMigration(data: encrypted) {
+            try save()
+        }
         return newSession.vault
     }
 
@@ -62,20 +74,35 @@ final class VaultRepository {
     }
 
     func changeMasterPassword(currentPassword: String, newPassword: String) throws {
+        try changeMasterPassword(
+            currentPasswordData: Data(currentPassword.utf8),
+            newPasswordData: Data(newPassword.utf8)
+        )
+    }
+
+    func changeMasterPassword(currentPasswordData: Data, newPasswordData: Data) throws {
         guard let session else { throw CryptoError.locked }
-        _ = try codec.decryptSession(data: storage.read(), password: currentPassword)
-        let (encrypted, newSession) = try codec.createSession(vault: session.vault, password: newPassword)
+        _ = try codec.decryptSession(data: storage.read(), passwordData: currentPasswordData)
+        let (encrypted, newSession) = try codec.createSession(vault: session.vault, passwordData: newPasswordData)
         try storage.write(encrypted)
         self.session = newSession
     }
 
     func exportUnlocked(exportPassword: String) throws -> Data {
+        try exportUnlocked(exportPasswordData: Data(exportPassword.utf8))
+    }
+
+    func exportUnlocked(exportPasswordData: Data) throws -> Data {
         guard let vault = session?.vault else { throw CryptoError.locked }
-        return try codec.encryptVault(vault, password: exportPassword, magic: VaultFileCodec.exportMagic)
+        return try codec.encryptVault(vault, passwordData: exportPasswordData, magic: VaultFileCodec.exportMagic)
     }
 
     func decryptExport(data: Data, exportPassword: String) throws -> Vault {
-        try codec.decryptVault(data: data, password: exportPassword, magic: VaultFileCodec.exportMagic)
+        try decryptExport(data: data, exportPasswordData: Data(exportPassword.utf8))
+    }
+
+    func decryptExport(data: Data, exportPasswordData: Data) throws -> Vault {
+        try codec.decryptVault(data: data, passwordData: exportPasswordData, magic: VaultFileCodec.exportMagic)
     }
 
     func replaceUnlocked(_ vault: Vault) throws {
