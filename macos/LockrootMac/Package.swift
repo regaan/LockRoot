@@ -11,8 +11,8 @@ let package = Package(
         .executable(name: "LockrootMac", targets: ["LockrootMac"])
     ],
     dependencies: [
-        .package(url: "https://github.com/jedisct1/swift-sodium.git", branch: "master"),
-        .package(url: "https://github.com/tmthecoder/Argon2Swift.git", branch: "main")
+        .package(url: "https://github.com/jedisct1/swift-sodium.git", revision: "cfd195c76882aa9b997560ca7cb95d72fbf5db00"),
+        .package(url: "https://github.com/tmthecoder/Argon2Swift.git", revision: "53543623fefe68461b7eeea03d7f96677c2fd76d")
     ],
     targets: [
         .executableTarget(

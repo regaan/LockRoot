@@ -471,16 +471,16 @@
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/jedisct1/swift-sodium.git";
 			requirement = {
-				branch = master;
-				kind = branch;
+				kind = revision;
+				revision = cfd195c76882aa9b997560ca7cb95d72fbf5db00;
 			};
 		};
 		8A0000010000000000000505 /* XCRemoteSwiftPackageReference "Argon2Swift" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/tmthecoder/Argon2Swift.git";
 			requirement = {
-				branch = main;
-				kind = branch;
+				kind = revision;
+				revision = 53543623fefe68461b7eeea03d7f96677c2fd76d;
 			};
 		};
 /* End XCRemoteSwiftPackageReference section */
